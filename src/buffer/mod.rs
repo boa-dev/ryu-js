@@ -6,8 +6,8 @@ use core::{mem, slice, str};
 use no_panic::no_panic;
 
 const NAN: &'static str = "NaN";
-const INFINITY: &'static str = "inf";
-const NEG_INFINITY: &'static str = "-inf";
+const INFINITY: &'static str = "Infinity";
+const NEG_INFINITY: &'static str = "-Infinity";
 
 /// Safe API for formatting floating point numbers to text.
 ///
