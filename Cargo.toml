@@ -1,5 +1,5 @@
 [package]
-name = "ryu"
+name = "ryu-js"
 version = "1.0.5" # don't forget to update html_root_url
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 license = "Apache-2.0 OR BSL-1.0"
