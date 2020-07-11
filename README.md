@@ -21,7 +21,7 @@ C, [https://github.com/ulfjack/ryu][upstream].
 
 ```toml
 [dependencies]
-ryu-js = "1.0"
+ryu-js = "0.1"
 ```
 
 ## Example
