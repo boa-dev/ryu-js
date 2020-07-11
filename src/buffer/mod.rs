@@ -20,9 +20,9 @@ const NEG_INFINITY: &str = "-Infinity";
 /// ```
 pub struct Buffer {
     #[cfg(maybe_uninit)]
-    bytes: [MaybeUninit<u8>; 24],
+    bytes: [MaybeUninit<u8>; 25],
     #[cfg(not(maybe_uninit))]
-    bytes: [u8; 24],
+    bytes: [u8; 25],
 }
 
 impl Buffer {
@@ -34,7 +34,7 @@ impl Buffer {
         // assume_init is safe here, since this is an array of MaybeUninit, which does not need
         // to be initialized.
         #[cfg(maybe_uninit)]
-        let bytes = [MaybeUninit::<u8>::uninit(); 24];
+        let bytes = [MaybeUninit::<u8>::uninit(); 25];
         #[cfg(not(maybe_uninit))]
         let bytes = unsafe { mem::uninitialized() };
 

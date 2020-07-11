@@ -248,3 +248,12 @@ fn test_ecma262_compliance() {
     assert_eq!(pretty(-1111111111111111111111.0), "-1.1111111111111111e+21");
     assert_eq!(pretty(-0.000000123), "-1.23e-7");
 }
+
+#[test]
+fn max_size_double_to_string() {
+    // See: https://viewer.scuttlebot.io/%25LQo5KOMeR%2Baj%2BEj0JVg3qLRqr%2BwiKo74nS8Uz7o0LDM%3D.sha256
+    assert_eq!(
+        pretty(-0.0000015809161985788154),
+        "-0.0000015809161985788154"
+    );
+}
