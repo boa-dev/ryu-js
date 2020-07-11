@@ -23,7 +23,7 @@
 //!
 //! ```
 //! fn main() {
-//!     let mut buffer = ryu::Buffer::new();
+//!     let mut buffer = ryu_js::Buffer::new();
 //!     let printed = buffer.format(1.234);
 //!     assert_eq!(printed, "1.234");
 //! }
@@ -89,7 +89,7 @@
 //! notation.
 
 #![no_std]
-#![doc(html_root_url = "https://docs.rs/ryu/1.0.5")]
+#![doc(html_root_url = "https://docs.rs/ryu-js/0.1.0")]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
 #![cfg_attr(
     feature = "cargo-clippy",

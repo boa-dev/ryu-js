@@ -18,15 +18,20 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied.
 
+#![allow(clippy::approx_constant)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::excessive_precision)]
+
 #[macro_use]
 mod macros;
 
 use std::f64;
 
 fn pretty(f: f64) -> String {
-    ryu::Buffer::new().format(f).to_owned()
+    ryu_js::Buffer::new().format(f).to_owned()
 }
 
+#[allow(clippy::int_plus_one)]
 fn ieee_parts_to_double(sign: bool, ieee_exponent: u32, ieee_mantissa: u64) -> f64 {
     assert!(ieee_exponent <= 2047);
     assert!(ieee_mantissa <= (1u64 << 53) - 1);
@@ -49,7 +54,7 @@ fn test_ryu() {
 #[test]
 fn test_random() {
     let n = if cfg!(miri) { 100 } else { 1000000 };
-    let mut buffer = ryu::Buffer::new();
+    let mut buffer = ryu_js::Buffer::new();
     for _ in 0..n {
         let f: f64 = rand::random();
         assert_eq!(f, buffer.format_finite(f).parse().unwrap());
@@ -62,7 +67,7 @@ fn test_non_finite() {
     for i in 0u64..1 << 23 {
         let f = f64::from_bits((((1 << 11) - 1) << 52) + (i << 29));
         assert!(!f.is_finite(), "f={}", f);
-        ryu::Buffer::new().format_finite(f);
+        ryu_js::Buffer::new().format_finite(f);
     }
 }
 

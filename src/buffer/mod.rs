@@ -1,20 +1,20 @@
 use crate::raw;
 #[cfg(maybe_uninit)]
 use core::mem::MaybeUninit;
-use core::{mem, slice, str};
+use core::{slice, str};
 #[cfg(feature = "no-panic")]
 use no_panic::no_panic;
 
-const NAN: &'static str = "NaN";
-const INFINITY: &'static str = "Infinity";
-const NEG_INFINITY: &'static str = "-Infinity";
+const NAN: &str = "NaN";
+const INFINITY: &str = "Infinity";
+const NEG_INFINITY: &str = "-Infinity";
 
 /// Safe API for formatting floating point numbers to text.
 ///
 /// ## Example
 ///
 /// ```
-/// let mut buffer = ryu::Buffer::new();
+/// let mut buffer = ryu_js::Buffer::new();
 /// let printed = buffer.format_finite(1.234);
 /// assert_eq!(printed, "1.234");
 /// ```
@@ -38,7 +38,7 @@ impl Buffer {
         #[cfg(not(maybe_uninit))]
         let bytes = unsafe { mem::uninitialized() };
 
-        Buffer { bytes: bytes }
+        Buffer { bytes }
     }
 
     /// Print a floating point number into this buffer and return a reference to
@@ -125,7 +125,7 @@ impl Sealed for f32 {
     #[inline]
     fn is_nonfinite(self) -> bool {
         const EXP_MASK: u32 = 0x7f800000;
-        let bits = unsafe { mem::transmute::<f32, u32>(self) };
+        let bits = self.to_bits();
         bits & EXP_MASK == EXP_MASK
     }
 
@@ -134,7 +134,7 @@ impl Sealed for f32 {
     fn format_nonfinite(self) -> &'static str {
         const MANTISSA_MASK: u32 = 0x007fffff;
         const SIGN_MASK: u32 = 0x80000000;
-        let bits = unsafe { mem::transmute::<f32, u32>(self) };
+        let bits = self.to_bits();
         if bits & MANTISSA_MASK != 0 {
             NAN
         } else if bits & SIGN_MASK != 0 {
@@ -154,7 +154,7 @@ impl Sealed for f64 {
     #[inline]
     fn is_nonfinite(self) -> bool {
         const EXP_MASK: u64 = 0x7ff0000000000000;
-        let bits = unsafe { mem::transmute::<f64, u64>(self) };
+        let bits = self.to_bits();
         bits & EXP_MASK == EXP_MASK
     }
 
@@ -163,7 +163,7 @@ impl Sealed for f64 {
     fn format_nonfinite(self) -> &'static str {
         const MANTISSA_MASK: u64 = 0x000fffffffffffff;
         const SIGN_MASK: u64 = 0x8000000000000000;
-        let bits = unsafe { mem::transmute::<f64, u64>(self) };
+        let bits = self.to_bits();
         if bits & MANTISSA_MASK != 0 {
             NAN
         } else if bits & SIGN_MASK != 0 {
