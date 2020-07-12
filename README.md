@@ -1,10 +1,10 @@
 # Ryū-js
 
-Ryū-js is a fork of the [ryu][ryu-crate] crate adjusted to comply to the ECMAScript [number-to-string][ntos] algorithm.
+Ryū-js is a fork of the [ryu][ryu-crate] crate adjusted to comply to the ECMAScript [number-to-string][number-to-string] algorithm.
 This crate is used in the `Boa` crate for number to string conversions
 
 [ryu-crate]: https://crates.io/crates/ryu
-[ntos]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
+[number-to-string]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
 
 Pure Rust implementation of Ryū, an algorithm to quickly convert floating point
 numbers to decimal strings.
@@ -36,23 +36,7 @@ fn main() {
 
 ## Performance
 
-You can run upstream's benchmarks with:
-
-```console
-$ git clone https://github.com/ulfjack/ryu c-ryu
-$ cd c-ryu
-$ bazel run -c opt //ryu/benchmark
-```
-
-And the same benchmark against our implementation with:
-
-```console
-$ git clone https://github.com/dtolnay/ryu rust-ryu
-$ cd rust-ryu
-$ cargo run --example upstream_benchmark --release
-```
-
-These benchmarks measure the average time to print a 32-bit float and average
+The benchmarks measure the average time to print a 32-bit float and average
 time to print a 64-bit float, where the inputs are distributed as uniform random
 bit patterns 32 and 64 bits wide.
 
