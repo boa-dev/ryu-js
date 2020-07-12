@@ -12,7 +12,7 @@ use no_panic::no_panic;
 
 /// Print f64 to the given buffer and return number of bytes written.
 ///
-/// At most 24 bytes will be written.
+/// At most 25 bytes will be written.
 ///
 /// ## Special cases
 ///

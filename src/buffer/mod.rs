@@ -47,11 +47,13 @@ impl Buffer {
     /// # Special cases
     ///
     /// This function formats NaN as the string "NaN", positive infinity as
-    /// "inf", and negative infinity as "-inf" to match std::fmt.
+    /// "Infinity", and negative infinity as "-Infinity" to match the [ECMAScript specification][spec].
     ///
     /// If your input is known to be finite, you may get better performance by
     /// calling the `format_finite` method instead of `format` to avoid the
     /// checks for special cases.
+    ///
+    /// [spec]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
     #[cfg_attr(feature = "no-panic", inline)]
     #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn format<F: Float>(&mut self, f: F) -> &str {
