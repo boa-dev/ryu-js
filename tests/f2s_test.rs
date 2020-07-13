@@ -18,13 +18,17 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied.
 
+#![allow(clippy::approx_constant)]
+#![allow(clippy::float_cmp)]
+#![allow(clippy::excessive_precision)]
+
 #[macro_use]
 mod macros;
 
 use std::f32;
 
 fn pretty(f: f32) -> String {
-    ryu::Buffer::new().format(f).to_owned()
+    ryu_js::Buffer::new().format(f).to_owned()
 }
 
 #[test]
@@ -44,7 +48,7 @@ fn test_ryu() {
 #[test]
 fn test_random() {
     let n = if cfg!(miri) { 100 } else { 1000000 };
-    let mut buffer = ryu::Buffer::new();
+    let mut buffer = ryu_js::Buffer::new();
     for _ in 0..n {
         let f: f32 = rand::random();
         assert_eq!(f, buffer.format_finite(f).parse().unwrap());
@@ -57,7 +61,7 @@ fn test_non_finite() {
     for i in 0u32..1 << 23 {
         let f = f32::from_bits((((1 << 8) - 1) << 23) + i);
         assert!(!f.is_finite(), "f={}", f);
-        ryu::Buffer::new().format_finite(f);
+        ryu_js::Buffer::new().format_finite(f);
     }
 }
 

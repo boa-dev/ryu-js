@@ -19,6 +19,7 @@
 // KIND, either express or implied.
 
 #![allow(dead_code)]
+#![allow(clippy::float_cmp)]
 
 #[path = "../src/common.rs"]
 mod common;

@@ -6,13 +6,13 @@ use self::mantissa::*;
 use crate::common;
 use crate::d2s::{self, *};
 use crate::f2s::*;
-use core::{mem, ptr};
+use core::ptr;
 #[cfg(feature = "no-panic")]
 use no_panic::no_panic;
 
 /// Print f64 to the given buffer and return number of bytes written.
 ///
-/// At most 24 bytes will be written.
+/// At most 25 bytes will be written.
 ///
 /// ## Special cases
 ///
@@ -41,7 +41,7 @@ use no_panic::no_panic;
 ///
 /// unsafe {
 ///     let mut buffer = [MaybeUninit::<u8>::uninit(); 24];
-///     let len = ryu::raw::format64(f, buffer.as_mut_ptr() as *mut u8);
+///     let len = ryu_js::raw::format64(f, buffer.as_mut_ptr() as *mut u8);
 ///     let slice = slice::from_raw_parts(buffer.as_ptr() as *const u8, len);
 ///     let print = str::from_utf8_unchecked(slice);
 ///     assert_eq!(print, "1.234");
@@ -50,7 +50,7 @@ use no_panic::no_panic;
 #[must_use]
 #[cfg_attr(feature = "no-panic", no_panic)]
 pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
-    let bits = mem::transmute::<f64, u64>(f);
+    let bits = f.to_bits();
     let sign = ((bits >> (DOUBLE_MANTISSA_BITS + DOUBLE_EXPONENT_BITS)) & 1) != 0;
     let ieee_mantissa = bits & ((1u64 << DOUBLE_MANTISSA_BITS) - 1);
     let ieee_exponent =
@@ -146,7 +146,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 ///
 /// unsafe {
 ///     let mut buffer = [MaybeUninit::<u8>::uninit(); 16];
-///     let len = ryu::raw::format32(f, buffer.as_mut_ptr() as *mut u8);
+///     let len = ryu_js::raw::format32(f, buffer.as_mut_ptr() as *mut u8);
 ///     let slice = slice::from_raw_parts(buffer.as_ptr() as *const u8, len);
 ///     let print = str::from_utf8_unchecked(slice);
 ///     assert_eq!(print, "1.234");
@@ -155,7 +155,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 #[must_use]
 #[cfg_attr(feature = "no-panic", no_panic)]
 pub unsafe fn format32(f: f32, result: *mut u8) -> usize {
-    let bits = mem::transmute::<f32, u32>(f);
+    let bits = f.to_bits();
     let sign = ((bits >> (FLOAT_MANTISSA_BITS + FLOAT_EXPONENT_BITS)) & 1) != 0;
     let ieee_mantissa = bits & ((1u32 << FLOAT_MANTISSA_BITS) - 1);
     let ieee_exponent =

@@ -1,28 +1,28 @@
 use crate::raw;
 #[cfg(maybe_uninit)]
 use core::mem::MaybeUninit;
-use core::{mem, slice, str};
+use core::{slice, str};
 #[cfg(feature = "no-panic")]
 use no_panic::no_panic;
 
-const NAN: &'static str = "NaN";
-const INFINITY: &'static str = "Infinity";
-const NEG_INFINITY: &'static str = "-Infinity";
+const NAN: &str = "NaN";
+const INFINITY: &str = "Infinity";
+const NEG_INFINITY: &str = "-Infinity";
 
 /// Safe API for formatting floating point numbers to text.
 ///
 /// ## Example
 ///
 /// ```
-/// let mut buffer = ryu::Buffer::new();
+/// let mut buffer = ryu_js::Buffer::new();
 /// let printed = buffer.format_finite(1.234);
 /// assert_eq!(printed, "1.234");
 /// ```
 pub struct Buffer {
     #[cfg(maybe_uninit)]
-    bytes: [MaybeUninit<u8>; 24],
+    bytes: [MaybeUninit<u8>; 25],
     #[cfg(not(maybe_uninit))]
-    bytes: [u8; 24],
+    bytes: [u8; 25],
 }
 
 impl Buffer {
@@ -34,11 +34,11 @@ impl Buffer {
         // assume_init is safe here, since this is an array of MaybeUninit, which does not need
         // to be initialized.
         #[cfg(maybe_uninit)]
-        let bytes = [MaybeUninit::<u8>::uninit(); 24];
+        let bytes = [MaybeUninit::<u8>::uninit(); 25];
         #[cfg(not(maybe_uninit))]
         let bytes = unsafe { mem::uninitialized() };
 
-        Buffer { bytes: bytes }
+        Buffer { bytes }
     }
 
     /// Print a floating point number into this buffer and return a reference to
@@ -47,11 +47,13 @@ impl Buffer {
     /// # Special cases
     ///
     /// This function formats NaN as the string "NaN", positive infinity as
-    /// "inf", and negative infinity as "-inf" to match std::fmt.
+    /// "Infinity", and negative infinity as "-Infinity" to match the [ECMAScript specification][spec].
     ///
     /// If your input is known to be finite, you may get better performance by
     /// calling the `format_finite` method instead of `format` to avoid the
     /// checks for special cases.
+    ///
+    /// [spec]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
     #[cfg_attr(feature = "no-panic", inline)]
     #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn format<F: Float>(&mut self, f: F) -> &str {
@@ -125,7 +127,7 @@ impl Sealed for f32 {
     #[inline]
     fn is_nonfinite(self) -> bool {
         const EXP_MASK: u32 = 0x7f800000;
-        let bits = unsafe { mem::transmute::<f32, u32>(self) };
+        let bits = self.to_bits();
         bits & EXP_MASK == EXP_MASK
     }
 
@@ -134,7 +136,7 @@ impl Sealed for f32 {
     fn format_nonfinite(self) -> &'static str {
         const MANTISSA_MASK: u32 = 0x007fffff;
         const SIGN_MASK: u32 = 0x80000000;
-        let bits = unsafe { mem::transmute::<f32, u32>(self) };
+        let bits = self.to_bits();
         if bits & MANTISSA_MASK != 0 {
             NAN
         } else if bits & SIGN_MASK != 0 {
@@ -154,7 +156,7 @@ impl Sealed for f64 {
     #[inline]
     fn is_nonfinite(self) -> bool {
         const EXP_MASK: u64 = 0x7ff0000000000000;
-        let bits = unsafe { mem::transmute::<f64, u64>(self) };
+        let bits = self.to_bits();
         bits & EXP_MASK == EXP_MASK
     }
 
@@ -163,7 +165,7 @@ impl Sealed for f64 {
     fn format_nonfinite(self) -> &'static str {
         const MANTISSA_MASK: u64 = 0x000fffffffffffff;
         const SIGN_MASK: u64 = 0x8000000000000000;
-        let bits = unsafe { mem::transmute::<f64, u64>(self) };
+        let bits = self.to_bits();
         if bits & MANTISSA_MASK != 0 {
             NAN
         } else if bits & SIGN_MASK != 0 {
