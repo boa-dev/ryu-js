@@ -226,6 +226,9 @@ fn test_ecma262_compliance() {
     assert_eq!(pretty(f64::NEG_INFINITY), "-Infinity");
     assert_eq!(pretty(0.0), "0");
     assert_eq!(pretty(9.0), "9");
+    assert_eq!(pretty(90.0), "90");
+    assert_eq!(pretty(90.12), "90.12");
+
     assert_eq!(pretty(0.000001), "0.000001");
     assert_eq!(pretty(0.0000001), "1e-7");
     assert_eq!(pretty(3e50), "3e+50");
@@ -237,16 +240,28 @@ fn test_ecma262_compliance() {
     assert_eq!(pretty(11111111111111111111111.0), "1.1111111111111111e+22");
 
     assert_eq!(pretty(0.1), "0.1");
+    assert_eq!(pretty(0.01), "0.01");
+    assert_eq!(pretty(0.001), "0.001");
+    assert_eq!(pretty(0.0001), "0.0001");
+    assert_eq!(pretty(0.00001), "0.00001");
+    assert_eq!(pretty(0.000001), "0.000001");
     assert_eq!(pretty(0.0000001), "1e-7");
     assert_eq!(pretty(0.00000012), "1.2e-7");
     assert_eq!(pretty(0.000000123), "1.23e-7");
     assert_eq!(pretty(0.00000001), "1e-8");
 
+    assert_eq!(pretty(-0.0), "0");
     assert_eq!(pretty(-9.0), "-9");
     assert_eq!(pretty(-90.12), "-90.12");
+    assert_eq!(pretty(-0.0000000123), "-1.23e-8");
     assert_eq!(pretty(-111111111111111111111.0), "-111111111111111110000");
     assert_eq!(pretty(-1111111111111111111111.0), "-1.1111111111111111e+21");
     assert_eq!(pretty(-0.000000123), "-1.23e-7");
+
+    assert_eq!(
+        pretty(123456789010111213141516171819.0),
+        "1.234567890101112e+29"
+    );
 }
 
 #[test]

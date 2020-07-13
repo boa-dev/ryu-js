@@ -56,15 +56,15 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
     let ieee_exponent =
         (bits >> DOUBLE_MANTISSA_BITS) as u32 & ((1u32 << DOUBLE_EXPONENT_BITS) - 1);
 
+    if ieee_exponent == 0 && ieee_mantissa == 0 {
+        ptr::copy_nonoverlapping(b"0".as_ptr(), result, 1);
+        return 1;
+    }
+
     let mut index = 0isize;
     if sign {
         *result = b'-';
         index += 1;
-    }
-
-    if ieee_exponent == 0 && ieee_mantissa == 0 {
-        ptr::copy_nonoverlapping(b"0".as_ptr(), result.offset(index), 1);
-        return sign as usize + 1;
     }
 
     let v = d2d(ieee_mantissa, ieee_exponent);
@@ -116,6 +116,8 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 }
 
 /// Print f32 to the given buffer and return number of bytes written.
+///
+/// **NOTE:** This is not ECMASCript complaint.
 ///
 /// At most 16 bytes will be written.
 ///
