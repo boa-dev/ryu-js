@@ -21,7 +21,7 @@ Internal improvements:
  - [INTERNAL #2](https://github.com/boa-dev/ryu-js/pull/2):
   Optimized `0` and `-0` to string conversion (@HalidOdat)
 
-# 0.1.0 (2020-07-13) - ECMAScript complaint `f64` conversions Release
+# 0.1.0 (2020-07-13) - ECMAScript compliant `f64` conversions Release
 
 This is the initial release of this crate, it introduces ECMAScript compliant `f64` to string conversions.
 
