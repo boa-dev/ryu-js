@@ -117,8 +117,6 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 
 /// Print f32 to the given buffer and return number of bytes written.
 ///
-/// **NOTE:** This is not ECMASCript complaint.
-///
 /// At most 16 bytes will be written.
 ///
 /// ## Special cases
@@ -163,15 +161,15 @@ pub unsafe fn format32(f: f32, result: *mut u8) -> usize {
     let ieee_exponent =
         ((bits >> FLOAT_MANTISSA_BITS) & ((1u32 << FLOAT_EXPONENT_BITS) - 1)) as u32;
 
+    if ieee_exponent == 0 && ieee_mantissa == 0 {
+        *result = b'0';
+        return 1;
+    }
+
     let mut index = 0isize;
     if sign {
         *result = b'-';
         index += 1;
-    }
-
-    if ieee_exponent == 0 && ieee_mantissa == 0 {
-        ptr::copy_nonoverlapping(b"0.0".as_ptr(), result.offset(index), 3);
-        return sign as usize + 3;
     }
 
     let v = f2d(ieee_mantissa, ieee_exponent);
@@ -181,16 +179,14 @@ pub unsafe fn format32(f: f32, result: *mut u8) -> usize {
     let kk = length + k; // 10^(kk-1) <= v < 10^kk
     debug_assert!(k >= -45);
 
-    if 0 <= k && kk <= 13 {
+    if 0 <= k && kk <= 21 {
         // 1234e7 -> 12340000000.0
         write_mantissa(v.mantissa, result.offset(index + length));
         for i in length..kk {
             *result.offset(index + i) = b'0';
         }
-        *result.offset(index + kk) = b'.';
-        *result.offset(index + kk + 1) = b'0';
-        index as usize + kk as usize + 2
-    } else if 0 < kk && kk <= 13 {
+        index as usize + kk as usize
+    } else if 0 < kk && kk <= 21 {
         // 1234e-2 -> 12.34
         write_mantissa(v.mantissa, result.offset(index + length + 1));
         ptr::copy(result.offset(index + 1), result.offset(index), kk as usize);
@@ -207,12 +203,12 @@ pub unsafe fn format32(f: f32, result: *mut u8) -> usize {
         write_mantissa(v.mantissa, result.offset(index + length + offset));
         index as usize + length as usize + offset as usize
     } else if length == 1 {
-        // 1e30
+        // 1e+30
         *result.offset(index) = b'0' + v.mantissa as u8;
         *result.offset(index + 1) = b'e';
         index as usize + 2 + write_exponent2(kk - 1, result.offset(index + 2))
     } else {
-        // 1234e30 -> 1.234e33
+        // 1234e30 -> 1.234e+33
         write_mantissa(v.mantissa, result.offset(index + length + 1));
         *result.offset(index) = *result.offset(index + 1);
         *result.offset(index + 1) = b'.';

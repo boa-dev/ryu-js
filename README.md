@@ -16,6 +16,9 @@ under the creative commons CC-BY-SA license.
 This Rust implementation is a line-by-line port of Ulf Adams' implementation in
 C, [https://github.com/ulfjack/ryu][upstream].
 
+*Requirements: this crate supports any compiler version back to rustc 1.31; it
+uses nothing from the Rust standard library so is usable from no_std crates.*
+
 [paper]: https://dl.acm.org/citation.cfm?id=3192369
 [upstream]: https://github.com/ulfjack/ryu/tree/1c413e127f8d02afd12eb6259bc80163722f1385
 
