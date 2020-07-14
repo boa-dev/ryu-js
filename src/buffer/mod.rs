@@ -36,7 +36,7 @@ impl Buffer {
         #[cfg(maybe_uninit)]
         let bytes = [MaybeUninit::<u8>::uninit(); 25];
         #[cfg(not(maybe_uninit))]
-        let bytes = unsafe { mem::uninitialized() };
+        let bytes = unsafe { core::mem::uninitialized() };
 
         Buffer { bytes }
     }
