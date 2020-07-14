@@ -10,7 +10,7 @@ Feature enhancements:
 Bug fixes:
 
  - [BUG #2](https://github.com/boa-dev/ryu-js/pull/2) (@HalidOdat):
-   - Fixed Comatibility with rust `1.31.0`.
+   - Fixed compatibility with rust `1.31.0`.
    - Fixed converting from `-0.0` to `0`.
    - Fixed max length docs for `format32` and `format64`.
 
