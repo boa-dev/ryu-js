@@ -117,7 +117,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 
 /// Print f32 to the given buffer and return number of bytes written.
 ///
-/// At most 16 bytes will be written.
+/// At most 22 bytes will be written.
 ///
 /// ## Special cases
 ///
@@ -145,7 +145,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 /// let f = 1.234f32;
 ///
 /// unsafe {
-///     let mut buffer = [MaybeUninit::<u8>::uninit(); 16];
+///     let mut buffer = [MaybeUninit::<u8>::uninit(); 22];
 ///     let len = ryu_js::raw::format32(f, buffer.as_mut_ptr() as *mut u8);
 ///     let slice = slice::from_raw_parts(buffer.as_ptr() as *const u8, len);
 ///     let print = str::from_utf8_unchecked(slice);
