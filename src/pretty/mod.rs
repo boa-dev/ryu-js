@@ -117,8 +117,6 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 
 /// Print f32 to the given buffer and return number of bytes written.
 ///
-/// **NOTE:** This is not ECMASCript complaint.
-///
 /// At most 16 bytes will be written.
 ///
 /// ## Special cases
