@@ -57,7 +57,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
         (bits >> DOUBLE_MANTISSA_BITS) as u32 & ((1u32 << DOUBLE_EXPONENT_BITS) - 1);
 
     if ieee_exponent == 0 && ieee_mantissa == 0 {
-        ptr::copy_nonoverlapping(b"0".as_ptr(), result, 1);
+        *result = b'0';
         return 1;
     }
 
@@ -98,12 +98,12 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
         write_mantissa_long(v.mantissa, result.offset(index + length + offset));
         index as usize + length as usize + offset as usize
     } else if length == 1 {
-        // 1e30
+        // 1e+30
         *result.offset(index) = b'0' + v.mantissa as u8;
         *result.offset(index + 1) = b'e';
         index as usize + 2 + write_exponent3(kk - 1, result.offset(index + 2))
     } else {
-        // 1234e30 -> 1.234e33
+        // 1234e30 -> 1.234e+33
         write_mantissa_long(v.mantissa, result.offset(index + length + 1));
         *result.offset(index) = *result.offset(index + 1);
         *result.offset(index + 1) = b'.';
