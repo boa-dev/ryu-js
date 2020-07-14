@@ -1,6 +1,6 @@
 # CHANGELOG
 
-# [# 0.2.0 (2020-07-14) - ECMAScript complaint `f32` conversions Release](https://github.com/boa-dev/ryu-js/compare/v0.1.0...v0.2.0)
+# [# 0.2.0 (2020-07-14) - ECMAScript compliant `f32` conversions Release](https://github.com/boa-dev/ryu-js/compare/v0.1.0...v0.2.0)
 
 Feature enhancements:
 
