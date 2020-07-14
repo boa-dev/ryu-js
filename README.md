@@ -25,7 +25,7 @@ uses nothing from the Rust standard library so is usable from no_std crates.*
 
 ```toml
 [dependencies]
-ryu-js = "0.1"
+ryu-js = "0.2"
 ```
 
 ## Example
