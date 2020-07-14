@@ -162,7 +162,7 @@ pub unsafe fn format32(f: f32, result: *mut u8) -> usize {
         ((bits >> FLOAT_MANTISSA_BITS) & ((1u32 << FLOAT_EXPONENT_BITS) - 1)) as u32;
 
     if ieee_exponent == 0 && ieee_mantissa == 0 {
-        ptr::copy_nonoverlapping(b"0".as_ptr(), result, 1);
+        *result = b'0';
         return 1;
     }
 
