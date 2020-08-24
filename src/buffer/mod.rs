@@ -109,10 +109,10 @@ impl Default for Buffer {
 }
 
 /// A floating point number, f32 or f64, that can be written into a
-/// [`ryu::Buffer`][Buffer].
+/// [`ryu_js::Buffer`][Buffer].
 ///
 /// This trait is sealed and cannot be implemented for types outside of the
-/// `ryu` crate.
+/// `ryu_js` crate.
 pub trait Float: Sealed {}
 impl Float for f32 {}
 impl Float for f64 {}
