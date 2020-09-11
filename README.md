@@ -1,7 +1,7 @@
 # Ryū-js
 
 Ryū-js is a fork of the [ryu][ryu-crate] crate adjusted to comply to the ECMAScript [number-to-string][number-to-string] algorithm.
-This crate is used in the [boa][boa-crate] for number to string conversions.
+This crate is used in the [boa][boa-crate] crate for number to string conversions.
 
 [ryu-crate]: https://crates.io/crates/ryu
 [boa-crate]: https://crates.io/crates/Boa
