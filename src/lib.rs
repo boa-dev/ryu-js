@@ -65,7 +65,7 @@
 //! notation.
 
 #![no_std]
-#![doc(html_root_url = "https://docs.rs/ryu-js/0.2.0")]
+#![doc(html_root_url = "https://docs.rs/ryu-js/0.2.1")]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
 #![cfg_attr(
     feature = "cargo-clippy",

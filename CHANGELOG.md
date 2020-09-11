@@ -1,5 +1,17 @@
 # CHANGELOG
 
+# [# 0.2.1 (2020-11-11)](https://github.com/boa-dev/ryu-js/compare/v0.2.0...v0.2.1)
+
+Feature enhancements:
+
+ - [FEATURE #11](https://github.com/boa-dev/ryu-js/pull/11):
+  Null check in unsafe `format32` and `format64` (in debug mode). (@HalidOdat)
+
+Bug fixes:
+
+ - BUG [#12](https://github.com/boa-dev/ryu-js/pull/12) [#13](https://github.com/boa-dev/ryu-js/pull/13):
+  Documentation fixes (@HalidOdat)
+
 # [# 0.2.0 (2020-07-14) - ECMAScript compliant `f32` conversions Release](https://github.com/boa-dev/ryu-js/compare/v0.1.0...v0.2.0)
 
 Feature enhancements:
