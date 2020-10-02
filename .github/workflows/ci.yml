@@ -19,15 +19,16 @@ jobs:
         with:
           toolchain: ${{matrix.rust}}
       - run: cargo test
+      - run: cargo test --features small
       - run: cargo build --tests --features no-panic --release
         if: matrix.rust == 'nightly'
 
   msrv:
-    name: Rust 1.31.0
+    name: Rust 1.36.0
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: dtolnay/rust-toolchain@1.31.0
+      - uses: dtolnay/rust-toolchain@1.36.0
       - run: cargo build
       - run: cargo build --features small
 
@@ -40,11 +41,23 @@ jobs:
         with:
           components: miri
       - run: cargo miri test
+        env:
+          MIRIFLAGS: "-Zmiri-tag-raw-pointers"
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@clippy
-      - run: cargo clippy -- -Dclippy::all -Dclippy::pedantic
+      - run: cargo clippy --tests --benches -- -Dclippy::all -Dclippy::pedantic
+
+  outdated:
+    name: Outdated
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/install@cargo-outdated
+      - run: cargo outdated --exit-code 1

@@ -6,8 +6,11 @@ license = "Apache-2.0 OR BSL-1.0"
 description = "Fast floating point to string conversion, ECMAScript compliant."
 repository = "https://github.com/boa-dev/ryu-js"
 documentation = "https://docs.rs/ryu-js"
+categories = ["value-formatting"]
 readme = "README.md"
+exclude = ["performance.png", "chart/**"]
 edition = "2018"
+rust-version = "1.36"
 
 [features]
 # Use smaller lookup tables. Instead of storing every required power of
@@ -21,8 +24,8 @@ no-panic = { version = "0.1", optional = true }
 
 [dev-dependencies]
 num_cpus = "1.8"
-rand = "0.7"
-rand_xorshift = "0.2"
+rand = "0.8"
+rand_xorshift = "0.3"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
