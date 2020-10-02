@@ -1,4 +1,6 @@
 use crate::raw;
+#[cfg(not(maybe_uninit))]
+use core::mem;
 #[cfg(maybe_uninit)]
 use core::mem::MaybeUninit;
 use core::{slice, str};
