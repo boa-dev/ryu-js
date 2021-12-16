@@ -21,9 +21,7 @@
 //! }
 //! ```
 //!
-//! ## Performance (lower is better)
-//!
-//! ![performance](https://raw.githubusercontent.com/boa-dev/ryu-js/master/performance.png)
+//! ## Performance
 //!
 //! The benchmarks measure the average time to print a 32-bit float and average
 //! time to print a 64-bit float, where the inputs are distributed as uniform random
