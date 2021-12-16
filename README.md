@@ -1,10 +1,8 @@
 # Ryū-js
 
 Ryū-js is a fork of the [ryu][ryu-crate] crate adjusted to comply to the ECMAScript [number-to-string][number-to-string] algorithm.
-This crate is used in the [boa][boa-crate] crate for number to string conversions.
 
 [ryu-crate]: https://crates.io/crates/ryu
-[boa-crate]: https://crates.io/crates/Boa
 [number-to-string]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
 
 Pure Rust implementation of Ryū, an algorithm to quickly convert floating point
@@ -42,9 +40,15 @@ fn main() {
 
 <br>
 
+## Performance 
+
+<!--
+
 ## Performance (lower is better)
 
 ![performance](https://raw.githubusercontent.com/boa-dev/ryu-js/master/performance.png)
+
+-->
 
 You can run upstream's benchmarks with:
 

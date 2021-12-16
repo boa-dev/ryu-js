@@ -20,6 +20,7 @@
 
 #![allow(
     clippy::approx_constant,
+    clippy::excessive_precision,
     clippy::cast_lossless,
     clippy::float_cmp,
     clippy::int_plus_one,

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# [# 0.2.2 (2020-12-16)](https://github.com/boa-dev/ryu-js/compare/v0.2.1...v0.2.2)
+
+Internal improvements:
+
+  - [INTERNAL #17](https://github.com/boa-dev/ryu-js/pull/17) Sync to `dtolnay/ryu` master
+  - [INTERNAL #16](https://github.com/boa-dev/ryu-js/pull/16) Sync to `dtolnay/ryu` master
+
 # [# 0.2.1 (2020-11-11)](https://github.com/boa-dev/ryu-js/compare/v0.2.0...v0.2.1)
 
 Feature enhancements:
