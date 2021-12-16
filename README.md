@@ -17,7 +17,7 @@ under the creative commons CC-BY-SA license.
 This Rust implementation is a line-by-line port of Ulf Adams' implementation in
 C, [https://github.com/ulfjack/ryu][upstream].
 
-*Requirements: this crate supports any compiler version back to rustc 1.31; it
+*Requirements: this crate supports any compiler version back to rustc 1.36; it
 uses nothing from the Rust standard library so is usable from no_std crates.*
 
 [paper]: https://dl.acm.org/citation.cfm?id=3192369
@@ -27,6 +27,8 @@ uses nothing from the Rust standard library so is usable from no_std crates.*
 [dependencies]
 ryu-js = "0.2"
 ```
+
+<br>
 
 ## Example
 
@@ -38,7 +40,27 @@ fn main() {
 }
 ```
 
-## Performance
+<br>
+
+## Performance (lower is better)
+
+![performance](https://raw.githubusercontent.com/boa-dev/ryu-js/master/performance.png)
+
+You can run upstream's benchmarks with:
+
+```console
+$ git clone https://github.com/ulfjack/ryu c-ryu
+$ cd c-ryu
+$ bazel run -c opt //ryu/benchmark:ryu_benchmark --
+```
+
+And the same benchmark against our implementation with:
+
+```console
+$ git clone https://github.com/boa-dev/ryu-js rust-ryu
+$ cd rust-ryu
+$ cargo run --example upstream_benchmark --release
+```
 
 The benchmarks measure the average time to print a 32-bit float and average
 time to print a 64-bit float, where the inputs are distributed as uniform random
@@ -55,19 +77,9 @@ standard library which you can run with:
 $ cargo bench
 ```
 
-The benchmark shows Ryū approximately 4-10x faster than the standard library
+The benchmark shows Ryū approximately 2-5x faster than the standard library
 across a range of f32 and f64 inputs. Measurements are in nanoseconds per
 iteration; smaller is better.
-
-| type=f32 | 0.0  | 0.1234 | 2.718281828459045 | f32::MAX |
-|:--------:|:----:|:------:|:-----------------:|:--------:|
-| RYU      | 3ns  | 28ns   | 23ns              | 22ns     |
-| STD      | 40ns | 106ns  | 128ns             | 110ns    |
-
-| type=f64 | 0.0  | 0.1234 | 2.718281828459045 | f64::MAX |
-|:--------:|:----:|:------:|:-----------------:|:--------:|
-| RYU      | 3ns  | 50ns   | 35ns              | 32ns     |
-| STD      | 39ns | 105ns  | 128ns             | 202ns    |
 
 ## Formatting
 
