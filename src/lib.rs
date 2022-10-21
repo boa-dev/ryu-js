@@ -21,7 +21,7 @@
 //! }
 //! ```
 //!
-//! ## Performance
+//! ## Performance (lower is better)
 //!
 //! The benchmarks measure the average time to print a 32-bit float and average
 //! time to print a 64-bit float, where the inputs are distributed as uniform random
