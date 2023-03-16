@@ -1,52 +1,49 @@
 // cargo bench
 
-#![feature(test)]
 #![allow(
     clippy::approx_constant,
     clippy::excessive_precision,
     clippy::unreadable_literal
 )]
 
-extern crate test;
-
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::io::Write;
-use std::{f32, f64};
-use test::{black_box, Bencher};
 
 macro_rules! benches {
     ($($name:ident($value:expr),)*) => {
-        mod bench_ryu {
+        mod bench_ryu_js {
             use super::*;
             $(
-                #[bench]
-                fn $name(b: &mut Bencher) {
+                pub fn $name(c: &mut Criterion) {
                     let mut buf = ryu_js::Buffer::new();
 
-                    b.iter(move || {
+                    c.bench_function(concat!("ryu_js_", stringify!($name)), move |b| b.iter(move || {
                         let value = black_box($value);
                         let formatted = buf.format_finite(value);
                         black_box(formatted);
-                    });
+                    }));
                 }
             )*
         }
+        criterion_group!(bench_ryu_js, $( bench_ryu_js::$name, )*);
 
         mod bench_std_fmt {
             use super::*;
             $(
-                #[bench]
-                fn $name(b: &mut Bencher) {
+                pub fn $name(c: &mut Criterion) {
                     let mut buf = Vec::with_capacity(20);
 
-                    b.iter(|| {
+                    c.bench_function(concat!("std_fmt_", stringify!($name)), move |b| b.iter(|| {
                         buf.clear();
                         let value = black_box($value);
                         write!(&mut buf, "{}", value).unwrap();
                         black_box(buf.as_slice());
-                    });
+                    }));
                 }
             )*
         }
+        criterion_group!(bench_std_fmt, $( bench_std_fmt::$name, )*);
+        criterion_main!(bench_ryu_js, bench_std_fmt);
     };
 }
 
