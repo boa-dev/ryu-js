@@ -18,7 +18,9 @@ const NEG_INFINITY: &str = "-Infinity";
 /// assert_eq!(printed, "1.234");
 /// ```
 pub struct Buffer {
-    bytes: [MaybeUninit<u8>; 25],
+    // TODO: figure out cap
+    // bytes: [MaybeUninit<u8>; 25],
+    bytes: [MaybeUninit<u8>; 256],
 }
 
 impl Buffer {
@@ -27,7 +29,7 @@ impl Buffer {
     #[inline]
     #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn new() -> Self {
-        let bytes = [MaybeUninit::<u8>::uninit(); 25];
+        let bytes = [MaybeUninit::<u8>::uninit(); 256];
 
         Buffer { bytes }
     }
@@ -80,6 +82,31 @@ impl Buffer {
             str::from_utf8_unchecked(slice)
         }
     }
+
+    #[inline]
+    #[cfg_attr(feature = "no-panic", no_panic)]
+    pub fn format_finite_to_fixed<F: Float>(&mut self, f: F, precision: u8) -> &str {
+        assert!(
+            (0..=100).contains(&precision),
+            "exp must be in range 0 to 100 inclusive"
+        );
+        unsafe {
+            let n = f.write_to_ryu_buffer_to_fixed(precision, self.bytes.as_mut_ptr() as *mut u8);
+            debug_assert!(n <= self.bytes.len());
+            let slice = slice::from_raw_parts(self.bytes.as_ptr() as *const u8, n);
+            str::from_utf8_unchecked(slice)
+        }
+    }
+
+    #[cfg_attr(feature = "no-panic", inline)]
+    #[cfg_attr(feature = "no-panic", no_panic)]
+    pub fn format_to_fixed<F: Float>(&mut self, f: F, precision: u8) -> &str {
+        if f.is_nonfinite() {
+            f.format_nonfinite()
+        } else {
+            self.format_finite_to_fixed(f, precision)
+        }
+    }
 }
 
 impl Copy for Buffer {}
@@ -112,6 +139,7 @@ pub trait Sealed: Copy {
     fn is_nonfinite(self) -> bool;
     fn format_nonfinite(self) -> &'static str;
     unsafe fn write_to_ryu_buffer(self, result: *mut u8) -> usize;
+    unsafe fn write_to_ryu_buffer_to_fixed(self, exp: u8, result: *mut u8) -> usize;
 }
 
 impl Sealed for f32 {
@@ -141,6 +169,9 @@ impl Sealed for f32 {
     unsafe fn write_to_ryu_buffer(self, result: *mut u8) -> usize {
         raw::format32(self, result)
     }
+    unsafe fn write_to_ryu_buffer_to_fixed(self, _exp: u8, _result: *mut u8) -> usize {
+        todo!("write_to_ryu_buffer_to_exponential")
+    }
 }
 
 impl Sealed for f64 {
@@ -169,5 +200,8 @@ impl Sealed for f64 {
     #[inline]
     unsafe fn write_to_ryu_buffer(self, result: *mut u8) -> usize {
         raw::format64(self, result)
+    }
+    unsafe fn write_to_ryu_buffer_to_fixed(self, exp: u8, result: *mut u8) -> usize {
+        raw::format64_to_fixed(self, exp, result)
     }
 }

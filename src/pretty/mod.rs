@@ -10,6 +10,10 @@ use core::ptr;
 #[cfg(feature = "no-panic")]
 use no_panic::no_panic;
 
+mod to_fixed;
+
+pub use to_fixed::format64_to_fixed;
+
 /// Print f64 to the given buffer and return number of bytes written.
 ///
 /// At most 25 bytes will be written.
