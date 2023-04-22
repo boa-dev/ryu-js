@@ -68,7 +68,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
         index += 1;
     }
 
-    let v = d2d(ieee_mantissa, ieee_exponent);
+    let v = unsafe { d2d(ieee_mantissa, ieee_exponent) };
 
     let length = d2s::decimal_length17(v.mantissa) as isize;
     let k = v.exponent as isize;

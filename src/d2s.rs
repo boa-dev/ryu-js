@@ -86,7 +86,7 @@ pub struct FloatingDecimal64 {
 }
 
 #[cfg_attr(feature = "no-panic", inline)]
-pub fn d2d(ieee_mantissa: u64, ieee_exponent: u32) -> FloatingDecimal64 {
+pub unsafe fn d2d(ieee_mantissa: u64, ieee_exponent: u32) -> FloatingDecimal64 {
     let (e2, m2) = if ieee_exponent == 0 {
         (
             // We subtract 2 so that the bounds computation has 2 additional bits.
