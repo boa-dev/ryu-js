@@ -283,7 +283,11 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
     };
 
     let mut nonzero = false;
-    if e2 >= -52 {
+
+    // Write the whole part (integral part) of the floating point.
+    //
+    // xxxxxxx.1234567 (write xs)
+    if e2 >= -(DOUBLE_MANTISSA_BITS as i32) {
         let idx = if e2 < 0 {
             0
         } else {
@@ -354,7 +358,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         0
     };
 
-    // domain of i = [0, 11] inclusive
+    // domain of loop i = [0, 11] inclusive
     for i in i..blocks {
         let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block_2 as isize;
         if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
