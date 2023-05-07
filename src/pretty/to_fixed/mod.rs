@@ -267,6 +267,12 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         return 2 + fraction_digits as usize;
     }
 
+    // This assertion should not fail, because if the abs(f) >= 1e21 check above.
+    //
+    // See tests.
+    const MAX_EXPONENT: u32 = 0b100_0100_0100; // 1029
+    debug_assert!((0..=MAX_EXPONENT).contains(&ieee_exponent));
+
     let mut index = 0isize;
     if sign {
         *result = b'-';
@@ -281,6 +287,9 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
             (1 << DOUBLE_MANTISSA_BITS) | ieee_mantissa,
         )
     };
+
+    const MAX_E2: i32 = MAX_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
+    debug_assert!((..=MAX_E2).contains(&e2));
 
     let mut nonzero = false;
 
@@ -317,15 +326,19 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         }
     }
 
+    // If the whole part is zero (nothing was writen), write a zero.
     if !nonzero {
         *result.offset(index) = b'0';
         index += 1;
     }
-    if fraction_digits > 0 {
+
+    // If fraction_digits is not zero, then write the dot.
+    if fraction_digits != 0 {
         *result.offset(index) = b'.';
         index += 1;
     }
 
+    // Check if it has fractional part.
     if e2 >= 0 {
         result
             .offset(index)

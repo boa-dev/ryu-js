@@ -29,8 +29,6 @@
     clippy::unseparated_literal_suffix
 )]
 
-use std::f64;
-
 fn pretty_to_fixed(f: f64, exp: u8) -> String {
     ryu_js::Buffer::new().format_to_fixed(f, exp).to_owned()
 }
@@ -220,4 +218,141 @@ fn test_exponential_notation() {
     assert_eq!(pretty_to_fixed(1.23e23, 2), "1.23e+23");
     assert_eq!(pretty_to_fixed(1.23e24, 2), "1.23e+24");
     assert_eq!(pretty_to_fixed(1.23e25, 2), "1.23e+25");
+}
+
+const DOUBLE_MANTISSA_BITS: usize = 52;
+const DOUBLE_BIAS: i32 = 1023;
+
+fn f64_and_e2_from_parts(sign: bool, exponent: u16, mantissa: u64) -> (f64, i32) {
+    assert!(exponent <= 0b111_1111_1111, "Invalid f64 exponent");
+
+    let mut bits: u64 = 0;
+
+    bits |= mantissa;
+    bits |= (exponent as u64) << 52;
+    bits |= u64::from(sign) << (52 + 11);
+
+    let e2 = if exponent == 0 {
+        1 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32
+    } else {
+        exponent as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32
+    };
+
+    (f64::from_bits(bits), e2)
+}
+
+fn f64_from_parts(sign: bool, exponent: u16, mantissa: u64) -> f64 {
+    f64_and_e2_from_parts(sign, exponent, mantissa).0
+}
+
+#[test]
+fn test_f64_from_parts() {
+    assert_eq!(pretty_to_fixed(f64_from_parts(false, 0, 0), 2), "0.00");
+    assert_eq!(pretty_to_fixed(f64_from_parts(true, 0, 0), 2), "0.00");
+}
+
+#[test]
+fn test_to_string_fallback_with_exponent_and_zero_mantissa() {
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0000_0000, 0), 2),
+        "2.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0011_1111, 0), 2),
+        "18446744073709551616.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0000, 0), 2),
+        "36893488147419103232.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0001, 0), 2),
+        "73786976294838206464.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0010, 0), 2),
+        "147573952589676412928.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0011, 0), 2),
+        "295147905179352825856.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0100, 0), 2),
+        "590295810358705651712.00"
+    );
+
+    // ToString fallback
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0101, 0), 2),
+        "1.1805916207174113e+21"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0110, 0), 2),
+        "2.3611832414348226e+21"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0111, 0), 2),
+        "4.722366482869645e+21"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0111_1111, 0), 2),
+        "3.402823669209385e+38"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_1111_1111, 0), 2),
+        "1.157920892373162e+77"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b101_1111_1111, 0), 2),
+        "1.3407807929942597e+154"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b111_1111_1111, 0), 2),
+        "Infinity"
+    );
+}
+
+#[test]
+fn test_to_string_fallback_with_exponent_and_full_mantissa() {
+    let m = !(u64::MAX << DOUBLE_MANTISSA_BITS as u64);
+
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0000_0000, m), 2),
+        "4.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0011_1111, m), 2),
+        "36893488147419099136.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0000, m), 2),
+        "73786976294838198272.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0001, m), 2),
+        "147573952589676396544.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0010, m), 2),
+        "295147905179352793088.00"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0011, m), 2),
+        "590295810358705586176.00"
+    );
+
+    // ToString fallback
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0100, m), 2),
+        "1.1805916207174112e+21"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b100_0100_0101, m), 2),
+        "2.3611832414348223e+21"
+    );
+    assert_eq!(
+        pretty_to_fixed(f64_from_parts(false, 0b111_1111_1111, m), 2),
+        "NaN"
+    );
 }
