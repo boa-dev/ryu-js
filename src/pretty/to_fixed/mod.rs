@@ -11,6 +11,15 @@ use crate::{
 };
 mod d2fixed_full_table;
 
+/// This assertion should not fail, because of the abs(f) >= 1e21 check
+/// that falls back to ToString ([`format64`]).
+///
+/// See tests.
+const MAX_EXPONENT: u32 = 0b100_0100_0100; // 1029
+
+/// `e2 = exponent - bias - |mantissa|`
+const MAX_E2: i32 = MAX_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
+
 const POW10_ADDITIONAL_BITS: u32 = 120;
 
 /// Returns `floor(log_10(2^e))` requires `0 <= e <= 1650`.
@@ -21,14 +30,28 @@ fn log10_pow2(e: i32) -> u32 {
     ((e as u32) * 78913) >> 18
 }
 
+/// Get index from `e2` value.
+///
+/// Range `[0, 2]` inclusive.
 fn index_for_exponent(e: u32) -> u32 {
-    (e + 15) / 16
+    debug_assert!((0..=MAX_E2 as u32).contains(&e));
+
+    let result = (e + 15) / 16;
+
+    debug_assert!((0..=2).contains(&result));
+
+    result
 }
 
 fn pow10_bits_for_index(idx: u32) -> u32 {
     16 * idx + POW10_ADDITIONAL_BITS
 }
 
+/// Get the length from the index.
+///
+/// Range `[2, 3]` inclusive.
+///
+// TODO: Because the ranges are so small we could have tables, too speed up execution.
 fn length_for_index(idx: u32) -> u32 {
     // +1 for ceil, +16 for mantissa, +8 to round up when dividing by 9
     (log10_pow2(16 * idx as i32) + 1 + 16 + 8) / 9
@@ -267,10 +290,6 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         return 2 + fraction_digits as usize;
     }
 
-    // This assertion should not fail, because if the abs(f) >= 1e21 check above.
-    //
-    // See tests.
-    const MAX_EXPONENT: u32 = 0b100_0100_0100; // 1029
     debug_assert!((0..=MAX_EXPONENT).contains(&ieee_exponent));
 
     let mut index = 0isize;
@@ -288,7 +307,6 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         )
     };
 
-    const MAX_E2: i32 = MAX_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
     debug_assert!((..=MAX_E2).contains(&e2));
 
     let mut nonzero = false;
@@ -371,7 +389,6 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         0
     };
 
-    // domain of loop i = [0, 11] inclusive
     for i in i..blocks {
         let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block_2 as isize;
         if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
