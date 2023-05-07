@@ -11,19 +11,19 @@ use crate::{
 };
 mod d2fixed_full_table;
 
-// Returns floor(log_10(2^e)); requires 0 <= e <= 1650.
+const POW10_ADDITIONAL_BITS: u32 = 120;
+
+/// Returns `floor(log_10(2^e))` requires `0 <= e <= 1650`.
 fn log10_pow2(e: i32) -> u32 {
     // The first value this approximation fails for is 2^1651 which is just greater than 10^297.
-    assert!(e >= 0);
-    assert!(e <= 1650);
+    assert!((0..=1650).contains(&e));
+
     ((e as u32) * 78913) >> 18
 }
 
 fn index_for_exponent(e: u32) -> u32 {
     (e + 15) / 16
 }
-
-const POW10_ADDITIONAL_BITS: u32 = 120;
 
 fn pow10_bits_for_index(idx: u32) -> u32 {
     16 * idx + POW10_ADDITIONAL_BITS
@@ -88,9 +88,8 @@ fn mul_shift_mod1e9(m: u64, mul: &[u64; 3], j: i32) -> u32 {
     let b1 = m as u128 * mul[1] as u128; // 64
     let b2 = m as u128 * mul[2] as u128; // 128
 
-    assert!(j >= 128);
-    assert!(j <= 180);
-    // j: [128, 256)
+    assert!((128..=180).contains(&j));
+
     let mid = b1 + ((b0 >> 64) as u64) as u128; // 64
     let s1 = b2 + ((mid >> 64) as u64) as u128; // 128
     uint128_mod1e9(s1 >> (j - 128))
@@ -99,6 +98,8 @@ fn mul_shift_mod1e9(m: u64, mul: &[u64; 3], j: i32) -> u32 {
 /// Convert `digits` to decimal and write the last 9 decimal digits to result.
 /// If `digits` contains additional digits, then those are silently ignored.
 unsafe fn append_nine_digits(mut digits: u32, result: *mut u8) {
+    debug_assert!(!result.is_null());
+
     if digits == 0 {
         result.write_bytes(b'0', 9);
         // memset(result, '0', 9);
@@ -129,6 +130,8 @@ unsafe fn append_nine_digits(mut digits: u32, result: *mut u8) {
 ///   10^(olength-1) <= digits < 10^olength
 /// e.g., by passing `olength` as `decimalLength9(digits)`.
 unsafe fn append_n_digits(olength: u32, mut digits: u32, result: *mut u8) {
+    debug_assert!(!result.is_null());
+
     let mut i = 0;
     while digits >= 10000 {
         let c = digits % 10000;
@@ -169,6 +172,8 @@ unsafe fn append_n_digits(olength: u32, mut digits: u32, result: *mut u8) {
 /// Convert `digits` to decimal and write the last `count` decimal digits to result.
 /// If `digits` contains additional digits, then those are silently ignored.
 unsafe fn append_c_digits(count: u32, mut digits: u32, result: *mut u8) {
+    debug_assert!(!result.is_null());
+
     // Copy pairs of digits from DIGIT_TABLE.
     let mut i: u32 = 0;
     //   for (; i < count - 1; i += 2) {
@@ -189,14 +194,6 @@ unsafe fn append_c_digits(count: u32, mut digits: u32, result: *mut u8) {
         // result[count - i - 1] = c;
     }
 }
-
-// // Returns true if value is divisible by 2^p.
-// fn multiple_of_power_of_2(value: u64, p: u32) -> bool {
-//     assert!(value != 0);
-//     assert!(p < 64);
-//     // __builtin_ctzll doesn't appear to be faster here.
-//     (value & ((1 << (p as u64)) - 1)) == 0
-// }
 
 // Returns the number of decimal digits in v, which must not contain more than 9 digits.
 fn decimal_length9(v: u32) -> u32 {
@@ -230,13 +227,13 @@ fn decimal_length9(v: u32) -> u32 {
 #[allow(clippy::missing_safety_doc)]
 #[must_use]
 #[cfg_attr(feature = "no-panic", no_panic)]
-pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize {
+pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) -> usize {
     // SKIPPED: 1. Let x be ? thisNumberValue(this value).
     // SKIPPED: 2. Let f be ? ToIntegerOrInfinity(fractionDigits).
     // SKIPPED: 3. Assert: If fractionDigits is undefined, then f is 0.
     // SKIPPED: 4. If f is not finite, throw a RangeError exception.
     // 5. If f < 0 or f > 100, throw a RangeError exception.
-    debug_assert!((0..=100).contains(&precision));
+    debug_assert!((0..=100).contains(&fraction_digits));
 
     // 10. If x ≥ 10^21, then
     let f_abs = if f < 0.0 { -f } else { f };
@@ -259,15 +256,15 @@ pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize
     // See: https://tc39.es/ecma262/#%E2%84%9D
     if ieee_exponent == 0 && ieee_mantissa == 0 {
         *result = b'0';
-        if precision == 0 {
+        if fraction_digits == 0 {
             return 1;
         }
 
         *result.offset(1) = b'.';
-        for offset in 2..(2 + precision as isize) {
+        for offset in 2..(2 + fraction_digits as isize) {
             *result.offset(offset) = b'0';
         }
-        return 2 + precision as usize;
+        return 2 + fraction_digits as usize;
     }
 
     let mut index = 0isize;
@@ -276,15 +273,14 @@ pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize
         index += 1;
     }
 
-    let e2;
-    let m2;
-    if ieee_exponent == 0 {
-        e2 = 1 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
-        m2 = ieee_mantissa;
+    let (e2, m2) = if ieee_exponent == 0 {
+        (1 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32, ieee_mantissa)
     } else {
-        e2 = ieee_exponent as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
-        m2 = (1 << DOUBLE_MANTISSA_BITS) | ieee_mantissa;
-    }
+        (
+            ieee_exponent as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32,
+            (1 << DOUBLE_MANTISSA_BITS) | ieee_mantissa,
+        )
+    };
 
     let mut nonzero = false;
     if e2 >= -52 {
@@ -296,7 +292,6 @@ pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize
         let p10bits = pow10_bits_for_index(idx);
         let len = length_for_index(idx) as i32;
 
-        // for (int32_t i = len - 1; i >= 0; --i) {
         for i in (0..=(len - 1)).rev() {
             let j = p10bits as i32 - e2;
             // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
@@ -322,118 +317,114 @@ pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize
         *result.offset(index) = b'0';
         index += 1;
     }
-    if precision > 0 {
+    if fraction_digits > 0 {
         *result.offset(index) = b'.';
         index += 1;
     }
 
-    let precision = precision as u32;
+    if e2 >= 0 {
+        result
+            .offset(index)
+            .write_bytes(b'0', fraction_digits as usize);
+        index += fraction_digits as isize;
+        return index as usize;
+    }
 
-    if e2 < 0 {
-        let idx = -e2 / 16;
-        let blocks: u32 = precision / 9 + 1;
-        // 0 = don't round up; 1 = round up unconditionally; 2 = round up if odd.
-        let mut round_up = 0;
-        let mut i = 0;
-        if blocks <= MIN_BLOCK_2[idx as usize] as u32 {
-            i = blocks;
-            result.offset(index).write_bytes(b'0', precision as usize);
-            // memset(result + index, '0', precision);
-            index += precision as isize;
-        } else if i < MIN_BLOCK_2[idx as usize] as u32 {
-            i = MIN_BLOCK_2[idx as usize] as u32;
-            result.offset(index).write_bytes(b'0', 9 * i as usize);
-            // memset(result + index, '0', 9 * i);
-            index += 9 * i as isize;
-        }
-        for i in i..blocks {
-            let j: isize = ADDITIONAL_BITS_2 as isize + (-(e2 as isize) - 16 * idx as isize);
-            let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize
-                - MIN_BLOCK_2[idx as usize] as isize;
-            if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
-                // If the remaining digits are all 0, then we might as well use memset.
-                // No rounding required in this case.
-                let fill = precision as usize - 9 * i as usize;
-                // memset(result + index, '0', fill);
-                result.offset(index).write_bytes(b'0', fill);
-                index += fill as isize;
-                break;
-            }
-            // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
-            // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
-            let mut digits: u32 =
-                mul_shift_mod1e9(m2 << 8, &POW10_SPLIT_2[p as usize], j as i32 + 8);
+    let mut round_up = false;
 
-            if i < blocks - 1 {
-                append_nine_digits(digits, result.offset(index));
-                index += 9;
-            } else {
-                let maximum: u32 = precision - 9 * i;
-                let mut last_digit: u32 = 0;
-                // for (uint32_t k = 0; k < 9 - maximum; ++k) {
-                for _k in 0..(9 - maximum) {
-                    last_digit = digits % 10;
-                    digits /= 10;
-                }
+    let fraction_digits = fraction_digits as u32;
 
-                round_up = u32::from(last_digit >= 5);
+    let idx = -e2 / 16;
+    let min_block_2 = MIN_BLOCK_2[idx as usize];
 
-                // if last_digit != 5 {
-                //     round_up = u32::from(last_digit > 5);
-                // } else {
-                //     // // Is m * 10^(additionalDigits + 1) / 2^(-e2) integer?
-                //     // let required_twos: i32 = -e2 - precision as i32 - 1;
-                //     // let trailing_zeros = required_twos <= 0
-                //     //     || (required_twos < 60 && multiple_of_power_of_2(m2, required_twos as u32));
-                //     // round_up = if trailing_zeros { 2 } else { 1 };
+    // fraction_digits is defined to be [0, 100] inclusive.
+    //
+    // Therefore blocks can be [1, 12] inclusive.
 
-                //     // If it's 5 we round unconditionally.
-                //     round_up = 1;
-                // }
-                if maximum > 0 {
-                    append_c_digits(maximum, digits, result.offset(index));
-                    index += maximum as isize;
-                }
-                break;
-            }
-        }
+    let blocks: u32 = fraction_digits / 9 + 1;
+    let i = if blocks <= min_block_2 as u32 {
+        result
+            .offset(index)
+            .write_bytes(b'0', fraction_digits as usize);
+        // memset(result + index, '0', precision);
+        index += fraction_digits as isize;
 
-        if round_up != 0 {
-            let mut round_index: isize = index;
-            let mut dot_index: isize = 0; // '.' can't be located at index 0
-            loop {
-                round_index -= 1;
-                let c = *result.offset(round_index);
-                if round_index == -1 || c == b'-' {
-                    *result.offset(round_index + 1) = b'1';
-                    if dot_index > 0 {
-                        *result.offset(dot_index) = b'0';
-                        *result.offset(dot_index + 1) = b'.';
-                    }
-                    *result.offset(index) = b'0';
-                    index += 1;
-                    break;
-                }
-                if c == b'.' {
-                    dot_index = round_index;
-                    continue;
-                } else if c == b'9' {
-                    // result[roundIndex] = '0';
-                    *result.offset(round_index) = b'0';
-                    round_up = 1;
-                    continue;
-                } else {
-                    if round_up == 2 && c % 2 == 0 {
-                        break;
-                    }
-                    *result.offset(round_index) = c + 1;
-                    break;
-                }
-            }
-        }
+        blocks
     } else {
-        result.offset(index).write_bytes(b'0', precision as usize);
-        index += precision as isize;
+        0
+    };
+
+    // domain of i = [0, 11] inclusive
+    for i in i..blocks {
+        let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block_2 as isize;
+        if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
+            // If the remaining digits are all 0, then we might as well use memset.
+            // No rounding required in this case.
+            let fill = fraction_digits as usize - 9 * i as usize;
+            // memset(result + index, '0', fill);
+            result.offset(index).write_bytes(b'0', fill);
+            index += fill as isize;
+            break;
+        }
+
+        // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
+        // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
+        let j: isize = ADDITIONAL_BITS_2 as isize + (-(e2 as isize) - 16 * idx as isize);
+        let mut digits: u32 = mul_shift_mod1e9(m2 << 8, &POW10_SPLIT_2[p as usize], j as i32 + 8);
+
+        if i < blocks - 1 {
+            append_nine_digits(digits, result.offset(index));
+            index += 9;
+        } else {
+            let maximum: u32 = fraction_digits - 9 * i;
+            let mut last_digit: u32 = 0;
+            for _k in 0..(9 - maximum) {
+                last_digit = digits % 10;
+                digits /= 10;
+            }
+
+            // If last digit is 5 or above, round up.
+            round_up = last_digit >= 5;
+
+            if maximum > 0 {
+                append_c_digits(maximum, digits, result.offset(index));
+                index += maximum as isize;
+            }
+            break;
+        }
+    }
+
+    if round_up {
+        let mut round_index: isize = index;
+        let mut dot_index: isize = 0; // '.' can't be located at index 0
+        loop {
+            round_index -= 1;
+            let c = *result.offset(round_index);
+            if round_index == -1 || c == b'-' {
+                *result.offset(round_index + 1) = b'1';
+                if dot_index > 0 {
+                    *result.offset(dot_index) = b'0';
+                    *result.offset(dot_index + 1) = b'.';
+                }
+                *result.offset(index) = b'0';
+                index += 1;
+                break;
+            }
+            if c == b'.' {
+                dot_index = round_index;
+                continue;
+            } else if c == b'9' {
+                *result.offset(round_index) = b'0';
+                // round_up = true;
+                continue;
+            } else {
+                // if round_up == 2 && c % 2 == 0 {
+                //     break;
+                // }
+                *result.offset(round_index) = c + 1;
+                break;
+            }
+        }
     }
 
     index as usize
