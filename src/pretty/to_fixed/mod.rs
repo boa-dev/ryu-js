@@ -96,12 +96,9 @@ fn mul_shift_mod1e9(m: u64, mul: &[u64; 3], j: i32) -> u32 {
     uint128_mod1e9(s1 >> (j - 128))
 }
 
-// Convert `digits` to decimal and write the last 9 decimal digits to result.
-// If `digits` contains additional digits, then those are silently ignored.
+/// Convert `digits` to decimal and write the last 9 decimal digits to result.
+/// If `digits` contains additional digits, then those are silently ignored.
 unsafe fn append_nine_digits(mut digits: u32, result: *mut u8) {
-    // #ifdef RYU_DEBUG
-    //   printf("DIGITS=%u\n", digits);
-    // #endif
     if digits == 0 {
         result.write_bytes(b'0', 9);
         // memset(result, '0', 9);
@@ -127,15 +124,11 @@ unsafe fn append_nine_digits(mut digits: u32, result: *mut u8) {
     *(result.offset(0)) = b'0' + digits as u8;
 }
 
-// Convert `digits` to a sequence of decimal digits. Append the digits to the result.
-// The caller has to guarantee that:
-//   10^(olength-1) <= digits < 10^olength
-// e.g., by passing `olength` as `decimalLength9(digits)`.
+/// Convert `digits` to a sequence of decimal digits. Append the digits to the result.
+/// The caller has to guarantee that:
+///   10^(olength-1) <= digits < 10^olength
+/// e.g., by passing `olength` as `decimalLength9(digits)`.
 unsafe fn append_n_digits(olength: u32, mut digits: u32, result: *mut u8) {
-    // #ifdef RYU_DEBUG
-    //   printf("DIGITS=%u\n", digits);
-    // #endif
-
     let mut i = 0;
     while digits >= 10000 {
         let c = digits % 10000;
@@ -173,12 +166,9 @@ unsafe fn append_n_digits(olength: u32, mut digits: u32, result: *mut u8) {
     }
 }
 
-// Convert `digits` to decimal and write the last `count` decimal digits to result.
-// If `digits` contains additional digits, then those are silently ignored.
+/// Convert `digits` to decimal and write the last `count` decimal digits to result.
+/// If `digits` contains additional digits, then those are silently ignored.
 unsafe fn append_c_digits(count: u32, mut digits: u32, result: *mut u8) {
-    // #ifdef RYU_DEBUG
-    //   printf("DIGITS=%u\n", digits);
-    // #endif
     // Copy pairs of digits from DIGIT_TABLE.
     let mut i: u32 = 0;
     //   for (; i < count - 1; i += 2) {
@@ -373,9 +363,7 @@ pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize
             // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
             let mut digits: u32 =
                 mul_shift_mod1e9(m2 << 8, &POW10_SPLIT_2[p as usize], j as i32 + 8);
-            // #ifdef RYU_DEBUG
-            //       printf("digits=%u\n", digits);
-            // #endif
+
             if i < blocks - 1 {
                 append_nine_digits(digits, result.offset(index));
                 index += 9;
@@ -388,18 +376,20 @@ pub unsafe fn format64_to_fixed(f: f64, precision: u8, result: *mut u8) -> usize
                     digits /= 10;
                 }
 
-                if last_digit != 5 {
-                    round_up = u32::from(last_digit > 5);
-                } else {
-                    // // Is m * 10^(additionalDigits + 1) / 2^(-e2) integer?
-                    // let required_twos: i32 = -e2 - precision as i32 - 1;
-                    // let trailing_zeros = required_twos <= 0
-                    //     || (required_twos < 60 && multiple_of_power_of_2(m2, required_twos as u32));
-                    // round_up = if trailing_zeros { 2 } else { 1 };
+                round_up = u32::from(last_digit >= 5);
 
-                    // If it's 5 we round unconditionally.
-                    round_up = 1;
-                }
+                // if last_digit != 5 {
+                //     round_up = u32::from(last_digit > 5);
+                // } else {
+                //     // // Is m * 10^(additionalDigits + 1) / 2^(-e2) integer?
+                //     // let required_twos: i32 = -e2 - precision as i32 - 1;
+                //     // let trailing_zeros = required_twos <= 0
+                //     //     || (required_twos < 60 && multiple_of_power_of_2(m2, required_twos as u32));
+                //     // round_up = if trailing_zeros { 2 } else { 1 };
+
+                //     // If it's 5 we round unconditionally.
+                //     round_up = 1;
+                // }
                 if maximum > 0 {
                     append_c_digits(maximum, digits, result.offset(index));
                     index += maximum as isize;

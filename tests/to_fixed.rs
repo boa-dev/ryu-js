@@ -29,13 +29,7 @@
     clippy::unseparated_literal_suffix
 )]
 
-#[macro_use]
-mod macros;
-
 use std::f64;
-
-// FIXME: remove after testing
-#[allow(unused_macros)]
 
 fn pretty_to_fixed(f: f64, exp: u8) -> String {
     ryu_js::Buffer::new().format_to_fixed(f, exp).to_owned()
@@ -95,6 +89,48 @@ fn negative_zero() {
     }
 }
 
+const WHOLE_NUMBERS: &[f64] = &[
+    1.0,
+    10.0,
+    100.0,
+    123.0,
+    1234567890.0,
+    i32::MAX as f64,
+    12_345_678_910_111_213.0,
+    9_007_199_254_740_992.0,
+];
+
+#[track_caller]
+fn check_whole_number(test_case: usize, number: f64) {
+    for fraction_digits in 0..=100u8 {
+        let mut fraction = "0".repeat(fraction_digits as usize);
+        if fraction_digits != 0 {
+            fraction = format!(".{fraction}");
+        }
+        let expected = format!("{number}{fraction}");
+
+        assert_eq!(
+            pretty_to_fixed(number, fraction_digits),
+            expected,
+            "Test case {test_case}. expected {number} with fraction_digits {fraction_digits} to equal {expected}"
+        );
+    }
+}
+
+#[test]
+fn test_positive_whole_numbers() {
+    for (test_case, number) in WHOLE_NUMBERS.iter().copied().enumerate() {
+        check_whole_number(test_case, number);
+    }
+}
+
+#[test]
+fn test_negative_whole_numbers() {
+    for (test_case, number) in WHOLE_NUMBERS.iter().copied().map(|x| -x).enumerate() {
+        check_whole_number(test_case, number);
+    }
+}
+
 // https://github.com/boa-dev/boa/issues/2609
 #[test]
 fn boa_issue_2609() {
@@ -121,23 +157,22 @@ fn test262() {
 }
 
 #[test]
-fn test2() {
-    assert_eq!(pretty_to_fixed(1010.95, 1), "1011.0");
+fn rounding() {
+    assert_eq!(pretty_to_fixed(1010.954526123, 9), "1010.954526123");
+    assert_eq!(pretty_to_fixed(1010.954526123, 8), "1010.95452612");
+    assert_eq!(pretty_to_fixed(1010.954526123, 7), "1010.9545261");
+    assert_eq!(pretty_to_fixed(1010.954526123, 6), "1010.954526");
+    assert_eq!(pretty_to_fixed(1010.954526123, 5), "1010.95453");
+    assert_eq!(pretty_to_fixed(1010.954526123, 4), "1010.9545");
+    assert_eq!(pretty_to_fixed(1010.954526123, 3), "1010.955");
+    assert_eq!(pretty_to_fixed(1010.954526123, 2), "1010.95");
+    assert_eq!(pretty_to_fixed(1010.954526123, 1), "1011.0");
+    assert_eq!(pretty_to_fixed(1010.954526123, 0), "1011");
 }
 
 #[test]
-fn test3() {
-    assert_eq!(pretty_to_fixed(1010.95, 0), "1011");
-}
-
-#[test]
-fn test_to_fixed_100() {
+fn test_to_fixed_fraction_digits_100() {
     assert_eq!(pretty_to_fixed(1.0, 100), "1.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     assert_eq!(pretty_to_fixed(1.256, 100), "1.2560000000000000053290705182007513940334320068359375000000000000000000000000000000000000000000000000");
     assert_eq!(pretty_to_fixed(1.12345678910111213, 100), "1.1234567891011122409139488809159956872463226318359375000000000000000000000000000000000000000000000000");
-}
-
-#[test]
-fn test_to_fixed_dont_round() {
-    assert_eq!(pretty_to_fixed(1.25, 2), "1.25");
 }
