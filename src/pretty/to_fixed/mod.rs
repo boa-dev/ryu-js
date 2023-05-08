@@ -369,7 +369,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
 
     let fraction_digits = fraction_digits as u32;
 
-    let idx = -e2 / 16;
+    let idx = (-e2 / 16).clamp(0, 26);
     let min_block_2 = MIN_BLOCK_2[idx as usize];
 
     // fraction_digits is defined to be [0, 100] inclusive.
