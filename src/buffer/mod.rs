@@ -18,9 +18,23 @@ const NEG_INFINITY: &str = "-Infinity";
 /// assert_eq!(printed, "1.234");
 /// ```
 pub struct Buffer {
-    // TODO: figure out cap
+    // TODO: separate ToString buffer and ToFixed.
+
     // bytes: [MaybeUninit<u8>; 25],
-    bytes: [MaybeUninit<u8>; 256],
+    /// Max bytes/characters required for toFixed:
+    ///
+    /// - 1 byte for sign (-)
+    ///
+    /// - `22` bytes for whole part:
+    ///     Because we have a check for if `>= 1e21` (1 byte extra, just in case)
+    ///
+    /// - 1 byte for dot (.)
+    ///
+    /// - `108` (`9 * 12`) bytes for fraction part:
+    ///     We write digits in blocks, which consist of `9` digits.
+    ///
+    /// Total: `1 + 22 + 1 + 108 = 132`
+    bytes: [MaybeUninit<u8>; 132],
 }
 
 impl Buffer {
@@ -29,7 +43,7 @@ impl Buffer {
     #[inline]
     #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn new() -> Self {
-        let bytes = [MaybeUninit::<u8>::uninit(); 256];
+        let bytes = [MaybeUninit::<u8>::uninit(); 132];
 
         Buffer { bytes }
     }
