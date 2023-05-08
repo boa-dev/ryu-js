@@ -365,8 +365,6 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         return index as usize;
     }
 
-    let mut round_up = false;
-
     let fraction_digits = fraction_digits as u32;
 
     let idx = (-e2 / 16).clamp(0, 26);
@@ -384,6 +382,8 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         index += fraction_digits as isize;
         return index as usize;
     }
+
+    let mut round_up = false;
 
     for i in 0..blocks {
         let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block_2 as isize;
