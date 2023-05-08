@@ -375,21 +375,17 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
     // fraction_digits is defined to be [0, 100] inclusive.
     //
     // Therefore blocks can be [1, 12] inclusive.
-
     let blocks: u32 = fraction_digits / 9 + 1;
-    let i = if blocks <= min_block_2 as u32 {
+    if blocks <= min_block_2 as u32 {
         result
             .offset(index)
             .write_bytes(b'0', fraction_digits as usize);
         // memset(result + index, '0', precision);
         index += fraction_digits as isize;
+        return index as usize;
+    }
 
-        blocks
-    } else {
-        0
-    };
-
-    for i in i..blocks {
+    for i in 0..blocks {
         let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block_2 as isize;
         if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
             // If the remaining digits are all 0, then we might as well use memset.
