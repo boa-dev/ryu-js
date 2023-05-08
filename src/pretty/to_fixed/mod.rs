@@ -323,7 +323,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         let p10bits = pow10_bits_for_index(idx);
         let len = length_for_index(idx) as i32;
 
-        for i in (0..=(len - 1)).rev() {
+        for i in (0..len).rev() {
             let j = p10bits as i32 - e2;
             // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
             // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
@@ -445,15 +445,11 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
                 continue;
             } else if c == b'9' {
                 *result.offset(round_index) = b'0';
-                // round_up = true;
                 continue;
-            } else {
-                // if round_up == 2 && c % 2 == 0 {
-                //     break;
-                // }
-                *result.offset(round_index) = c + 1;
-                break;
             }
+
+            *result.offset(round_index) = c + 1;
+            break;
         }
     }
 
