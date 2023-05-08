@@ -252,7 +252,7 @@ fn test_f64_from_parts() {
 }
 
 #[test]
-fn test_to_string_fallback_with_exponent_and_zero_mantissa() {
+fn test_max_exponent_boundry_zero_mantissa() {
     assert_eq!(
         pretty_to_fixed(f64_from_parts(false, 0b100_0000_0000, 0), 2),
         "2.00"
@@ -314,7 +314,7 @@ fn test_to_string_fallback_with_exponent_and_zero_mantissa() {
 }
 
 #[test]
-fn test_to_string_fallback_with_exponent_and_full_mantissa() {
+fn test_max_exponent_boundry_and_full_mantissa() {
     let m = !(u64::MAX << DOUBLE_MANTISSA_BITS as u64);
 
     assert_eq!(
@@ -354,5 +354,47 @@ fn test_to_string_fallback_with_exponent_and_full_mantissa() {
     assert_eq!(
         pretty_to_fixed(f64_from_parts(false, 0b111_1111_1111, m), 2),
         "NaN"
+    );
+}
+
+const MIN_EXPONENT: u16 = 0b010_1001_0011;
+const MIN_E2: i32 = MIN_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
+const INX: i32 = -MIN_E2 / 16;
+
+#[test]
+fn test_min_exponent_boundry_zero_mantissa() {
+    let m = 0;
+
+    let expected = "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+    for exponent in 0..=MIN_EXPONENT {
+        assert_eq!(
+            pretty_to_fixed(f64_from_parts(false, exponent, m), 100),
+            expected
+        );
+    }
+
+    assert_ne!(
+        pretty_to_fixed(f64_from_parts(false, MIN_EXPONENT + 1, m), 100),
+        expected
+    );
+}
+
+#[test]
+fn test_min_exponent_boundry_full_mantissa() {
+    let m = !(u64::MAX << DOUBLE_MANTISSA_BITS as u64);
+
+    let expected = "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+    for exponent in 0..=MIN_EXPONENT {
+        assert_eq!(
+            pretty_to_fixed(f64_from_parts(false, exponent, m), 100),
+            expected
+        );
+    }
+
+    assert_ne!(
+        pretty_to_fixed(f64_from_parts(false, MIN_EXPONENT + 1, m), 100),
+        expected
     );
 }
