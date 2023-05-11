@@ -1,4 +1,6 @@
+#[cfg(feature = "to-fixed")]
 use crate::pretty::to_fixed::MAX_BUFFER_SIZE;
+
 use crate::raw;
 use core::mem::MaybeUninit;
 use core::{slice, str};
@@ -9,7 +11,10 @@ const NAN: &str = "NaN";
 const INFINITY: &str = "Infinity";
 const NEG_INFINITY: &str = "-Infinity";
 
-// const BUFFER_SIZE: usize = 25;
+#[cfg(not(feature = "to-fixed"))]
+const BUFFER_SIZE: usize = 25;
+
+#[cfg(feature = "to-fixed")]
 const BUFFER_SIZE: usize = MAX_BUFFER_SIZE;
 
 /// Safe API for formatting floating point numbers to text.
@@ -22,9 +27,6 @@ const BUFFER_SIZE: usize = MAX_BUFFER_SIZE;
 /// assert_eq!(printed, "1.234");
 /// ```
 pub struct Buffer {
-    // TODO: separate ToString buffer and ToFixed.
-
-    // bytes: [MaybeUninit<u8>; 25],
     bytes: [MaybeUninit<u8>; BUFFER_SIZE],
 }
 
@@ -102,6 +104,7 @@ impl Buffer {
     /// [spec]: https://tc39.es/ecma262/#sec-numeric-types-number-tofixed
     #[cfg_attr(feature = "no-panic", inline)]
     #[cfg_attr(feature = "no-panic", no_panic)]
+    #[cfg(feature = "to-fixed")]
     pub fn format_to_fixed<F: FloatToFixed>(&mut self, f: F, fraction_digits: u8) -> &str {
         let fraction_digits = fraction_digits.min(100);
 
@@ -160,6 +163,8 @@ pub trait Sealed: Copy {
     fn is_nonfinite(self) -> bool;
     fn format_nonfinite(self) -> &'static str;
     unsafe fn write_to_ryu_buffer(self, result: *mut u8) -> usize;
+
+    #[cfg(feature = "to-fixed")]
     unsafe fn write_to_ryu_buffer_to_fixed(self, fraction_digits: u8, result: *mut u8) -> usize;
 }
 
@@ -190,7 +195,9 @@ impl Sealed for f32 {
     unsafe fn write_to_ryu_buffer(self, result: *mut u8) -> usize {
         raw::format32(self, result)
     }
+
     #[inline]
+    #[cfg(feature = "to-fixed")]
     unsafe fn write_to_ryu_buffer_to_fixed(self, _fraction_digits: u8, _result: *mut u8) -> usize {
         panic!("toFixed for f32 type is not implemented yet!")
     }
@@ -225,6 +232,7 @@ impl Sealed for f64 {
     }
 
     #[inline]
+    #[cfg(feature = "to-fixed")]
     unsafe fn write_to_ryu_buffer_to_fixed(self, fraction_digits: u8, result: *mut u8) -> usize {
         raw::format64_to_fixed(self, fraction_digits, result)
     }
