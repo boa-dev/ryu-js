@@ -38,9 +38,9 @@ fn pretty_to_string(f: f64) -> String {
 }
 
 #[test]
-#[should_panic]
 fn range_over_100() {
-    pretty_to_fixed(0.0, 101);
+    let expected = "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    assert_eq!(pretty_to_fixed(0.0, 101), expected);
 }
 
 #[test]

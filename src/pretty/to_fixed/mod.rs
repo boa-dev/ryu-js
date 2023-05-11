@@ -9,7 +9,227 @@ use crate::{
         },
     },
 };
+#[cfg(feature = "no-panic")]
+use no_panic::no_panic;
+
 mod d2fixed_full_table;
+
+/// Max bytes/characters required for `toFixed` representation of a [`f64`] value:
+///
+/// - 1 byte for sign (-)
+/// - `22` bytes for whole part:
+///     Because we have a check for if `>= 1e21` (1 byte extra, just in case)
+/// - `1` byte for dot (`.`)
+/// - `108` (`9 * 12`) bytes for fraction part:
+///     We write digits in blocks, which consist of `9` digits.
+///
+/// Total: `1 + 22 + 1 + 108 = 132`
+pub const MAX_BUFFER_SIZE: usize = 132;
+
+pub struct Cursor {
+    buffer: *mut u8,
+    len: isize,
+    index: isize,
+}
+
+impl Cursor {
+    pub fn new(buffer: *mut u8, len: usize) -> Self {
+        debug_assert!(!buffer.is_null());
+        Self {
+            buffer,
+            len: len as isize,
+            index: 0,
+        }
+    }
+
+    /// Append one byte to buffer.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is enough space for the given byte.
+    unsafe fn append_byte(&mut self, c: u8) {
+        debug_assert!(self.index < self.len);
+
+        *self.buffer.offset(self.index) = c;
+        self.index += 1;
+    }
+
+    /// Append the byte `count` times into the buffer.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is enough space for the given bytes.
+    unsafe fn append_bytes(&mut self, c: u8, count: usize) {
+        debug_assert!(self.index + count as isize <= self.len);
+
+        self.buffer.offset(self.index).write_bytes(c, count);
+        self.index += count as isize;
+    }
+
+    /// Gets the current [`Cursor`] index.
+    ///
+    /// The `index` is also the amount of bytes that have been written into the buffer.
+    fn index(&self) -> usize {
+        self.index as usize
+    }
+
+    /// Convert `digits` to decimal and write the last 9 decimal digits to result.
+    /// If `digits` contains additional digits, then those are silently ignored.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the buffer has enough space for `9` bytes.
+    unsafe fn append_nine_digits(&mut self, mut digits: u32) {
+        let count = 9;
+
+        debug_assert!(self.index + count <= self.len);
+
+        if digits == 0 {
+            self.append_bytes(b'0', 9);
+            return;
+        }
+
+        let result = self.buffer.offset(self.index);
+
+        for i in (0u32..5).step_by(4) {
+            let c = digits % 10000;
+            digits /= 10000;
+            let c0 = (c % 100) << 1;
+            let c1 = (c / 100) << 1;
+
+            // memcpy(result + 7 - i, DIGIT_TABLE + c0, 2);
+            // memcpy(result + 5 - i, DIGIT_TABLE + c1, 2);
+            result
+                .offset(7 - i as isize)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c0 as isize), 2);
+            result
+                .offset(5 - i as isize)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c1 as isize), 2);
+        }
+        *(result.offset(0)) = b'0' + digits as u8;
+
+        self.index += count;
+    }
+
+    /// Convert `digits` to a sequence of decimal digits. Append the digits to the result.
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that:
+    ///
+    /// - 10^(olength-1) <= digits < 10^olength
+    /// e.g., by passing `olength` as `decimalLength9(digits)`.
+    ///
+    /// - That the buffer has enough space for the decimal length of the given integer.
+    unsafe fn append_n_digits(&mut self, mut digits: u32) {
+        let olength = decimal_length9(digits);
+
+        debug_assert!(self.index + olength as isize <= self.len);
+
+        let result = self.buffer.offset(self.index);
+
+        let mut i = 0;
+        while digits >= 10000 {
+            let c = digits % 10000;
+
+            digits /= 10000;
+            let c0 = (c % 100) << 1;
+            let c1 = (c / 100) << 1;
+
+            // memcpy(result + olength - i - 2, DIGIT_TABLE + c0, 2);
+            // memcpy(result + olength - i - 4, DIGIT_TABLE + c1, 2);
+            result
+                .offset(olength as isize - i as isize - 2)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c0 as isize), 2);
+            result
+                .offset(olength as isize - i as isize - 4)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c1 as isize), 2);
+
+            i += 4;
+        }
+        if digits >= 100 {
+            let c = (digits % 100) << 1;
+            digits /= 100;
+
+            // memcpy(result + olength - i - 2, DIGIT_TABLE + c, 2);
+            result
+                .offset(olength as isize - i as isize - 2)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
+
+            i += 2;
+        }
+        if digits >= 10 {
+            let c = digits << 1;
+
+            // memcpy(result + olength - i - 2, DIGIT_TABLE + c, 2);
+            result
+                .offset(olength as isize - i as isize - 2)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
+        } else {
+            *result = b'0' + digits as u8;
+        }
+
+        self.index += olength as isize;
+    }
+
+    /// Convert `digits` to decimal and write the last `count` decimal digits to result.
+    /// If `digits` contains additional digits, then those are silently ignored.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the buffer has enough space for the given `count`.
+    unsafe fn append_c_digits(&mut self, count: u32, mut digits: u32) {
+        debug_assert!(self.index + count as isize <= self.len);
+
+        let result = self.buffer.offset(self.index);
+
+        // Copy pairs of digits from DIGIT_TABLE.
+        let mut i: u32 = 0;
+        //   for (; i < count - 1; i += 2) {
+        while i < count - 1 {
+            let c: u32 = (digits % 100) << 1;
+            digits /= 100;
+
+            // memcpy(result + count - i - 2, DIGIT_TABLE + c, 2);
+            result
+                .offset((count - i - 2) as isize)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
+
+            i += 2;
+        }
+        // Generate the last digit if count is odd.
+        if i < count {
+            let c = b'0' + (digits % 10) as u8;
+
+            // result[count - i - 1] = c;
+            *result.offset((count - i - 1) as isize) = c;
+        }
+
+        self.index += count as isize;
+    }
+
+    /// Get the byte at the given index.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the index is within `[0, len)`.
+    unsafe fn get(&mut self, i: isize) -> u8 {
+        debug_assert!((0..self.len).contains(&i));
+
+        *self.buffer.offset(i)
+    }
+
+    /// Set the byte at the given index with the value.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the index is within `[0, len)`.
+    unsafe fn set(&mut self, i: isize, c: u8) {
+        debug_assert!((0..self.len).contains(&i));
+
+        *self.buffer.offset(i) = c;
+    }
+}
 
 /// This assertion should not fail, because of the abs(f) >= 1e21 check
 /// that falls back to ToString ([`format64`]).
@@ -118,106 +338,6 @@ fn mul_shift_mod1e9(m: u64, mul: &[u64; 3], j: i32) -> u32 {
     uint128_mod1e9(s1 >> (j - 128))
 }
 
-/// Convert `digits` to decimal and write the last 9 decimal digits to result.
-/// If `digits` contains additional digits, then those are silently ignored.
-unsafe fn append_nine_digits(mut digits: u32, result: *mut u8) {
-    debug_assert!(!result.is_null());
-
-    if digits == 0 {
-        result.write_bytes(b'0', 9);
-        // memset(result, '0', 9);
-        return;
-    }
-
-    //   for (uint32_t i = 0; i < 5; i += 4) {
-    for i in (0u32..5).step_by(4) {
-        let c = digits % 10000;
-        digits /= 10000;
-        let c0 = (c % 100) << 1;
-        let c1 = (c / 100) << 1;
-
-        result
-            .offset(7 - i as isize)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c0 as isize), 2);
-        result
-            .offset(5 - i as isize)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c1 as isize), 2);
-        // memcpy(result + 7 - i, DIGIT_TABLE + c0, 2);
-        // memcpy(result + 5 - i, DIGIT_TABLE + c1, 2);
-    }
-    *(result.offset(0)) = b'0' + digits as u8;
-}
-
-/// Convert `digits` to a sequence of decimal digits. Append the digits to the result.
-/// The caller has to guarantee that:
-///   10^(olength-1) <= digits < 10^olength
-/// e.g., by passing `olength` as `decimalLength9(digits)`.
-unsafe fn append_n_digits(olength: u32, mut digits: u32, result: *mut u8) {
-    debug_assert!(!result.is_null());
-
-    let mut i = 0;
-    while digits >= 10000 {
-        let c = digits % 10000;
-
-        digits /= 10000;
-        let c0 = (c % 100) << 1;
-        let c1 = (c / 100) << 1;
-        result
-            .offset(olength as isize - i as isize - 2)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c0 as isize), 2);
-        result
-            .offset(olength as isize - i as isize - 4)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c1 as isize), 2);
-        // memcpy(result + olength - i - 2, DIGIT_TABLE + c0, 2);
-        // memcpy(result + olength - i - 4, DIGIT_TABLE + c1, 2);
-        i += 4;
-    }
-    if digits >= 100 {
-        let c = (digits % 100) << 1;
-        digits /= 100;
-        result
-            .offset(olength as isize - i as isize - 2)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
-        // memcpy(result + olength - i - 2, DIGIT_TABLE + c, 2);
-        i += 2;
-    }
-    if digits >= 10 {
-        let c = digits << 1;
-        result
-            .offset(olength as isize - i as isize - 2)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
-        // memcpy(result + olength - i - 2, DIGIT_TABLE + c, 2);
-    } else {
-        *result = b'0' + digits as u8;
-    }
-}
-
-/// Convert `digits` to decimal and write the last `count` decimal digits to result.
-/// If `digits` contains additional digits, then those are silently ignored.
-unsafe fn append_c_digits(count: u32, mut digits: u32, result: *mut u8) {
-    debug_assert!(!result.is_null());
-
-    // Copy pairs of digits from DIGIT_TABLE.
-    let mut i: u32 = 0;
-    //   for (; i < count - 1; i += 2) {
-    while i < count - 1 {
-        let c: u32 = (digits % 100) << 1;
-        digits /= 100;
-        result
-            .offset((count - i - 2) as isize)
-            .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
-        // memcpy(result + count - i - 2, DIGIT_TABLE + c, 2);
-
-        i += 2;
-    }
-    // Generate the last digit if count is odd.
-    if i < count {
-        let c = b'0' + (digits % 10) as u8;
-        *result.offset((count - i - 1) as isize) = c;
-        // result[count - i - 1] = c;
-    }
-}
-
 // Returns the number of decimal digits in v, which must not contain more than 9 digits.
 fn decimal_length9(v: u32) -> u32 {
     // Function precondition: v is not a 10-digit number.
@@ -246,8 +366,45 @@ fn decimal_length9(v: u32) -> u32 {
     }
 }
 
-// FIXME: remove after prototyping
-#[allow(clippy::missing_safety_doc)]
+/// Print [`f64`] to the given buffer using fixed notation,
+/// as defined in the ECMAScript `Number.prototype.toFixed()` method
+/// and return number of bytes written.
+///
+/// At most 132 bytes will be written.
+///
+/// ## Special cases
+///
+/// This function **does not** check for NaN or infinity. If the input
+/// number is not a finite float, the printed representation will be some
+/// correctly formatted but unspecified numerical value.
+///
+/// Please check [`is_finite`] yourself before calling this function, or
+/// check [`is_nan`] and [`is_infinite`] and handle those cases yourself.
+///
+/// [`is_finite`]: https://doc.rust-lang.org/std/primitive.f64.html#method.is_finite
+/// [`is_nan`]: https://doc.rust-lang.org/std/primitive.f64.html#method.is_nan
+/// [`is_infinite`]: https://doc.rust-lang.org/std/primitive.f64.html#method.is_infinite
+///
+/// ## Safety
+///
+/// The `result` pointer argument must point to sufficiently many writable bytes
+/// to hold Ryū's representation of `f`.
+///
+/// ## Example
+///
+/// ```
+/// use std::{mem::MaybeUninit, slice, str};
+///
+/// let f = 1.235f64;
+///
+/// unsafe {
+///     let mut buffer = [MaybeUninit::<u8>::uninit(); 132];
+///     let len = ryu_js::raw::format64_to_fixed(f, 2, buffer.as_mut_ptr() as *mut u8);
+///     let slice = slice::from_raw_parts(buffer.as_ptr() as *const u8, len);
+///     let print = str::from_utf8_unchecked(slice);
+///     assert_eq!(print, "1.24");
+/// }
+/// ```
 #[must_use]
 #[cfg_attr(feature = "no-panic", no_panic)]
 pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) -> usize {
@@ -265,7 +422,8 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         return format64(f, result);
     }
 
-    debug_assert!(!result.is_null());
+    let mut result = Cursor::new(result, MAX_BUFFER_SIZE);
+
     let bits = f.to_bits();
     let sign = ((bits >> (DOUBLE_MANTISSA_BITS + DOUBLE_EXPONENT_BITS)) & 1) != 0;
     let ieee_mantissa = bits & ((1u64 << DOUBLE_MANTISSA_BITS) - 1);
@@ -278,24 +436,19 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
     //
     // See: https://tc39.es/ecma262/#%E2%84%9D
     if ieee_exponent == 0 && ieee_mantissa == 0 {
-        *result = b'0';
+        result.append_byte(b'0');
         if fraction_digits == 0 {
-            return 1;
+            return result.index();
         }
-
-        *result.offset(1) = b'.';
-        for offset in 2..(2 + fraction_digits as isize) {
-            *result.offset(offset) = b'0';
-        }
-        return 2 + fraction_digits as usize;
+        result.append_byte(b'.');
+        result.append_bytes(b'0', fraction_digits as usize);
+        return result.index();
     }
 
     debug_assert!((0..=MAX_EXPONENT).contains(&ieee_exponent));
 
-    let mut index = 0isize;
     if sign {
-        *result = b'-';
-        index += 1;
+        result.append_byte(b'-');
     }
 
     let (e2, m2) = if ieee_exponent == 0 {
@@ -333,12 +486,9 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
                 j + 8,
             );
             if nonzero {
-                append_nine_digits(digits, result.offset(index));
-                index += 9;
+                result.append_nine_digits(digits);
             } else if digits != 0 {
-                let olength = decimal_length9(digits);
-                append_n_digits(olength, digits, result.offset(index));
-                index += olength as isize;
+                result.append_n_digits(digits);
                 nonzero = true;
             }
         }
@@ -346,54 +496,48 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
 
     // If the whole part is zero (nothing was writen), write a zero.
     if !nonzero {
-        *result.offset(index) = b'0';
-        index += 1;
+        result.append_byte(b'0');
     }
 
     // If fraction_digits is not zero, then write the dot.
     if fraction_digits != 0 {
-        *result.offset(index) = b'.';
-        index += 1;
+        result.append_byte(b'.');
     }
 
     // Check if it has fractional part.
     if e2 >= 0 {
-        result
-            .offset(index)
-            .write_bytes(b'0', fraction_digits as usize);
-        index += fraction_digits as isize;
-        return index as usize;
+        result.append_bytes(b'0', fraction_digits as usize);
+        return result.index();
     }
+
+    // Write fractional part.
+    //
+    // 1234567.yyyyyyy (write ys)
 
     let fraction_digits = fraction_digits as u32;
 
     let idx = (-e2 / 16).clamp(0, 26);
-    let min_block_2 = MIN_BLOCK_2[idx as usize];
+    let min_block = MIN_BLOCK_2[idx as usize];
 
     // fraction_digits is defined to be [0, 100] inclusive.
     //
     // Therefore blocks can be [1, 12] inclusive.
     let blocks: u32 = fraction_digits / 9 + 1;
-    if blocks <= min_block_2 as u32 {
-        result
-            .offset(index)
-            .write_bytes(b'0', fraction_digits as usize);
-        // memset(result + index, '0', precision);
-        index += fraction_digits as isize;
-        return index as usize;
+    if blocks <= min_block as u32 {
+        result.append_bytes(b'0', fraction_digits as usize);
+        return result.index();
     }
 
     let mut round_up = false;
 
     for i in 0..blocks {
-        let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block_2 as isize;
+        let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block as isize;
         if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
             // If the remaining digits are all 0, then we might as well use memset.
             // No rounding required in this case.
             let fill = fraction_digits as usize - 9 * i as usize;
             // memset(result + index, '0', fill);
-            result.offset(index).write_bytes(b'0', fill);
-            index += fill as isize;
+            result.append_bytes(b'0', fill);
             break;
         }
 
@@ -403,8 +547,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         let mut digits: u32 = mul_shift_mod1e9(m2 << 8, &POW10_SPLIT_2[p as usize], j as i32 + 8);
 
         if i < blocks - 1 {
-            append_nine_digits(digits, result.offset(index));
-            index += 9;
+            result.append_nine_digits(digits);
         } else {
             let maximum: u32 = fraction_digits - 9 * i;
             let mut last_digit: u32 = 0;
@@ -416,42 +559,42 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
             // If last digit is 5 or above, round up.
             round_up = last_digit >= 5;
 
-            if maximum > 0 {
-                append_c_digits(maximum, digits, result.offset(index));
-                index += maximum as isize;
+            if maximum != 0 {
+                result.append_c_digits(maximum, digits);
             }
             break;
         }
     }
 
+    // Roundup if needed.
     if round_up {
-        let mut round_index: isize = index;
-        let mut dot_index: isize = 0; // '.' can't be located at index 0
+        let mut round_index = result.index;
+        let mut dot_index = 0; // '.' can't be located at index 0
         loop {
             round_index -= 1;
-            let c = *result.offset(round_index);
+
+            let c = result.get(round_index);
             if round_index == -1 || c == b'-' {
-                *result.offset(round_index + 1) = b'1';
+                result.set(round_index + 1, b'1');
                 if dot_index > 0 {
-                    *result.offset(dot_index) = b'0';
-                    *result.offset(dot_index + 1) = b'.';
+                    result.set(dot_index, b'0');
+                    result.set(dot_index + 1, b'.');
                 }
-                *result.offset(index) = b'0';
-                index += 1;
+                result.append_byte(b'0');
                 break;
             }
             if c == b'.' {
                 dot_index = round_index;
                 continue;
             } else if c == b'9' {
-                *result.offset(round_index) = b'0';
+                result.set(round_index, b'0');
                 continue;
             }
 
-            *result.offset(round_index) = c + 1;
+            result.set(round_index, c + 1);
             break;
         }
     }
 
-    index as usize
+    result.index()
 }
