@@ -136,6 +136,9 @@ fn test262() {
 
 #[test]
 fn rounding() {
+    assert_eq!(pretty_to_fixed(1.5, 0), "2");
+    assert_eq!(pretty_to_fixed(2.9, 0), "3");
+
     assert_eq!(pretty_to_fixed(2.55, 1), "2.5");
     assert_eq!(pretty_to_fixed(2.449999999999999999, 1), "2.5");
 
@@ -338,8 +341,6 @@ fn test_max_exponent_boundry_and_full_mantissa() {
 }
 
 const MIN_EXPONENT: u16 = 0b010_1001_0011;
-// const MIN_E2: i32 = MIN_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
-// const INX: i32 = -MIN_E2 / 16;
 
 #[test]
 fn test_min_exponent_boundry_zero_mantissa() {

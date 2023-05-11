@@ -236,9 +236,13 @@ impl Cursor {
 ///
 /// See tests.
 const MAX_EXPONENT: u32 = 0b100_0100_0100; // 1029
+const MIN_EXPONENT: u16 = 0b010_1001_0011;
 
 /// `e2 = exponent - bias - |mantissa|`
 const MAX_E2: i32 = MAX_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
+const MIN_E2: i32 = MIN_EXPONENT as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32;
+
+const MAX_POW10_SPLIT_2_INX: i32 = -MIN_E2 / 16;
 
 const POW10_ADDITIONAL_BITS: u32 = 120;
 
@@ -516,7 +520,8 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
 
     let fraction_digits = fraction_digits as u32;
 
-    let idx = (-e2 / 16).clamp(0, 26);
+    let idx = (-e2 / 16).min(MAX_POW10_SPLIT_2_INX);
+
     let min_block = MIN_BLOCK_2[idx as usize];
 
     // fraction_digits is defined to be [0, 100] inclusive.
