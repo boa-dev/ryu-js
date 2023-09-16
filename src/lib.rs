@@ -91,8 +91,6 @@ pub use crate::buffer::{Buffer, Float, FloatToFixed};
 
 /// Unsafe functions that mirror the API of the C implementation of Ryū.
 pub mod raw {
-    pub use crate::pretty::{format32, format64};
-
-    #[cfg(feature = "to-fixed")]
     pub use crate::pretty::format64_to_fixed;
+    pub use crate::pretty::{format32, format64};
 }

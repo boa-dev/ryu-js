@@ -91,7 +91,7 @@ impl Cursor {
 
         let result = self.buffer.offset(self.index);
 
-        for i in (0u32..5).step_by(4) {
+        for i in [0, 4] {
             let c = digits % 10000;
             digits /= 10000;
             let c0 = (c % 100) << 1;
@@ -231,8 +231,7 @@ impl Cursor {
     }
 }
 
-/// This assertion should not fail, because of the abs(f) >= 1e21 check
-/// that falls back to ToString ([`format64`]).
+/// Because of the abs(f) >= 1e21 check, falls back to ToString ([`format64`]).
 ///
 /// See tests.
 const MAX_EXPONENT: u32 = 0b100_0100_0100; // 1029

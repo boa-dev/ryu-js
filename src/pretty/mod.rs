@@ -10,10 +10,7 @@ use core::ptr;
 #[cfg(feature = "no-panic")]
 use no_panic::no_panic;
 
-#[cfg(feature = "to-fixed")]
 pub mod to_fixed;
-
-#[cfg(feature = "to-fixed")]
 pub use to_fixed::{format64_to_fixed, Cursor};
 
 /// Print f64 to the given buffer and return number of bytes written.
