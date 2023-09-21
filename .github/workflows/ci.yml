@@ -19,13 +19,8 @@ env:
   RUSTFLAGS: -Dwarnings
 
 jobs:
-  pre_ci:
-    uses: dtolnay/.github/.github/workflows/pre_ci.yml@master
-
   test:
     name: Rust ${{matrix.rust}}
-    needs: pre_ci
-    if: needs.pre_ci.outputs.continue
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -47,8 +42,6 @@ jobs:
 
   msrv:
     name: Rust 1.36.0
-    needs: pre_ci
-    if: needs.pre_ci.outputs.continue
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -59,8 +52,6 @@ jobs:
 
   miri:
     name: Miri
-    needs: pre_ci
-    if: needs.pre_ci.outputs.continue
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -93,8 +84,6 @@ jobs:
 
   fuzz:
     name: Fuzz
-    needs: pre_ci
-    if: needs.pre_ci.outputs.continue
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
