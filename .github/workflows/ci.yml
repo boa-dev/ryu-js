@@ -102,4 +102,3 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - uses: dtolnay/install@cargo-fuzz
       - run: cargo fuzz check
-
