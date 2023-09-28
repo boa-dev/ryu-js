@@ -10,7 +10,7 @@ exclude = ["performance.png", "chart/**"]
 keywords = ["float"]
 license = "Apache-2.0 OR BSL-1.0"
 repository = "https://github.com/boa-dev/ryu-js"
-rust-version = "1.60"
+rust-version = "1.64"
 
 [features]
 # Use smaller lookup tables. Instead of storing every required power of
