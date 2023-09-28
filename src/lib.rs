@@ -14,11 +14,9 @@
 //! # Example
 //!
 //! ```
-//! fn main() {
-//!     let mut buffer = ryu_js::Buffer::new();
-//!     let printed = buffer.format(1.234);
-//!     assert_eq!(printed, "1.234");
-//! }
+//! let mut buffer = ryu_js::Buffer::new();
+//! let printed = buffer.format(1.234);
+//! assert_eq!(printed, "1.234");
 //! ```
 //!
 //! ## Performance (lower is better)
