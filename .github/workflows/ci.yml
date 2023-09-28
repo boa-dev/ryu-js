@@ -47,10 +47,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@1.36.0
-      - run: cargo --version
       - run: cargo build
       - run: cargo build --features small
-      - run: cargo +1.36.0 build
 
   miri:
     name: Miri
