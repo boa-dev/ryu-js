@@ -47,7 +47,7 @@ fn infinity() {
 fn positive_zero() {
     assert_eq!(pretty_to_fixed(0.0, 0), "0");
     for fraction_digits in 1..=100u8 {
-        let expected = "0".repeat(fraction_digits as usize);
+        let expected = "0".repeat(usize::from(fraction_digits));
         assert_eq!(
             pretty_to_fixed(0.0, fraction_digits),
             format!("0.{expected}")
@@ -59,7 +59,7 @@ fn positive_zero() {
 fn negative_zero() {
     assert_eq!(pretty_to_fixed(-0.0, 0), "0");
     for fraction_digits in 1..=100u8 {
-        let expected = "0".repeat(fraction_digits as usize);
+        let expected = "0".repeat(usize::from(fraction_digits));
         assert_eq!(
             pretty_to_fixed(-0.0, fraction_digits),
             format!("0.{expected}")
@@ -81,7 +81,7 @@ const WHOLE_NUMBERS: &[f64] = &[
 #[track_caller]
 fn check_whole_number(test_case: usize, number: f64) {
     for fraction_digits in 0..=100u8 {
-        let mut fraction = "0".repeat(fraction_digits as usize);
+        let mut fraction = "0".repeat(usize::from(fraction_digits));
         if fraction_digits != 0 {
             fraction = format!(".{fraction}");
         }
@@ -203,7 +203,7 @@ fn test_exponential_notation() {
     assert_eq!(pretty_to_fixed(1.23e25, 2), "1.23e+25");
 }
 
-const DOUBLE_MANTISSA_BITS: usize = 52;
+const DOUBLE_MANTISSA_BITS: u8 = 52;
 const DOUBLE_BIAS: i32 = 1023;
 
 fn f64_and_e2_from_parts(sign: bool, exponent: u16, mantissa: u64) -> (f64, i32) {
@@ -212,13 +212,13 @@ fn f64_and_e2_from_parts(sign: bool, exponent: u16, mantissa: u64) -> (f64, i32)
     let mut bits: u64 = 0;
 
     bits |= mantissa;
-    bits |= (exponent as u64) << 52;
+    bits |= (u64::from(exponent)) << 52;
     bits |= u64::from(sign) << (52 + 11);
 
     let e2 = if exponent == 0 {
-        1 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32
+        1 - DOUBLE_BIAS - i32::from(DOUBLE_MANTISSA_BITS)
     } else {
-        exponent as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32
+        i32::from(exponent) - DOUBLE_BIAS - i32::from(DOUBLE_MANTISSA_BITS)
     };
 
     (f64::from_bits(bits), e2)
@@ -298,7 +298,7 @@ fn test_max_exponent_boundry_zero_mantissa() {
 
 #[test]
 fn test_max_exponent_boundry_and_full_mantissa() {
-    let m = !(u64::MAX << DOUBLE_MANTISSA_BITS as u64);
+    let m = !(u64::MAX << u64::from(DOUBLE_MANTISSA_BITS));
 
     assert_eq!(
         pretty_to_fixed(f64_from_parts(false, 0b100_0000_0000, m), 2),
@@ -363,7 +363,7 @@ fn test_min_exponent_boundry_zero_mantissa() {
 
 #[test]
 fn test_min_exponent_boundry_full_mantissa() {
-    let m = !(u64::MAX << DOUBLE_MANTISSA_BITS as u64);
+    let m = !(u64::MAX << u64::from(DOUBLE_MANTISSA_BITS));
 
     let expected = "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
