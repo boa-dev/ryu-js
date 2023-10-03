@@ -33,6 +33,7 @@ pub struct Cursor {
 }
 
 impl Cursor {
+    #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn new(buffer: *mut u8, len: usize) -> Self {
         debug_assert!(!buffer.is_null());
         Self {
@@ -47,6 +48,7 @@ impl Cursor {
     /// # Safety
     ///
     /// The caller must ensure that there is enough space for the given byte.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_byte(&mut self, c: u8) {
         debug_assert!(self.index < self.len);
 
@@ -59,6 +61,7 @@ impl Cursor {
     /// # Safety
     ///
     /// The caller must ensure that there is enough space for the given bytes.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_bytes(&mut self, c: u8, count: usize) {
         debug_assert!(self.index + count as isize <= self.len);
 
@@ -69,6 +72,7 @@ impl Cursor {
     /// Gets the current [`Cursor`] index.
     ///
     /// The `index` is also the amount of bytes that have been written into the buffer.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     fn index(&self) -> usize {
         self.index as usize
     }
@@ -79,6 +83,7 @@ impl Cursor {
     /// # Safety
     ///
     /// The caller must ensure that the buffer has enough space for `9` bytes.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_nine_digits(&mut self, mut digits: u32) {
         let count = 9;
 
@@ -121,6 +126,7 @@ impl Cursor {
     /// e.g., by passing `olength` as `decimalLength9(digits)`.
     ///
     /// - That the buffer has enough space for the decimal length of the given integer.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_n_digits(&mut self, mut digits: u32) {
         let olength = decimal_length9(digits);
 
@@ -178,6 +184,7 @@ impl Cursor {
     /// # Safety
     ///
     /// The caller must ensure that the buffer has enough space for the given `count`.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_c_digits(&mut self, count: u32, mut digits: u32) {
         debug_assert!(self.index + count as isize <= self.len);
 
@@ -213,6 +220,7 @@ impl Cursor {
     /// # Safety
     ///
     /// The caller must ensure that the index is within `[0, len)`.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn get(&mut self, i: isize) -> u8 {
         debug_assert!((0..self.len).contains(&i));
 
@@ -224,6 +232,7 @@ impl Cursor {
     /// # Safety
     ///
     /// The caller must ensure that the index is within `[0, len)`.
+    #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn set(&mut self, i: isize, c: u8) {
         debug_assert!((0..self.len).contains(&i));
 
@@ -246,9 +255,10 @@ const MAX_POW10_SPLIT_2_INX: i32 = -MIN_E2 / 16;
 const POW10_ADDITIONAL_BITS: u32 = 120;
 
 /// Returns `floor(log_10(2^e))` requires `0 <= e <= 1650`.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn log10_pow2(e: i32) -> u32 {
     // The first value this approximation fails for is 2^1651 which is just greater than 10^297.
-    assert!((0..=1650).contains(&e));
+    debug_assert!((0..=1650).contains(&e));
 
     ((e as u32) * 78913) >> 18
 }
@@ -256,6 +266,7 @@ fn log10_pow2(e: i32) -> u32 {
 /// Get index from `e2` value.
 ///
 /// Range `[0, 2]` inclusive.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn index_for_exponent(e: u32) -> u32 {
     debug_assert!((0..=MAX_E2 as u32).contains(&e));
 
@@ -266,6 +277,7 @@ fn index_for_exponent(e: u32) -> u32 {
     result
 }
 
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn pow10_bits_for_index(idx: u32) -> u32 {
     16 * idx + POW10_ADDITIONAL_BITS
 }
@@ -275,11 +287,13 @@ fn pow10_bits_for_index(idx: u32) -> u32 {
 /// Range `[2, 3]` inclusive.
 ///
 // TODO: Because the ranges are so small we could have tables, too speed up execution.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn length_for_index(idx: u32) -> u32 {
     // +1 for ceil, +16 for mantissa, +8 to round up when dividing by 9
     (log10_pow2(16 * idx as i32) + 1 + 16 + 8) / 9
 }
 
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn umul256(a: u128, b_hi: u64, b_lo: u64) -> (u128, u128) {
     let a_lo = a as u64;
     let a_hi = (a >> 64) as u64;
@@ -307,6 +321,7 @@ fn umul256(a: u128, b_hi: u64, b_lo: u64) -> (u128, u128) {
 }
 
 // Returns the high 128 bits of the 256-bit product of a and b.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn umul256_hi(a: u128, b_hi: u64, b_lo: u64) -> u128 {
     // Reuse the umul256 implementation.
     // Optimizers will likely eliminate the instructions used to compute the
@@ -317,6 +332,7 @@ fn umul256_hi(a: u128, b_hi: u64, b_lo: u64) -> u128 {
 
 // Unfortunately, gcc/clang do not automatically turn a 128-bit integer division
 // into a multiplication, so we have to do it manually.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn uint128_mod1e9(v: u128) -> u32 {
     // After multiplying, we're going to shift right by 29, then truncate to uint32_t.
     // This means that we need only 29 + 32 = 61 bits, so we can truncate to uint64_t before shifting.
@@ -329,12 +345,13 @@ fn uint128_mod1e9(v: u128) -> u32 {
 }
 
 // Best case: use 128-bit type.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn mul_shift_mod1e9(m: u64, mul: &[u64; 3], j: i32) -> u32 {
     let b0 = m as u128 * mul[0] as u128; // 0
     let b1 = m as u128 * mul[1] as u128; // 64
     let b2 = m as u128 * mul[2] as u128; // 128
 
-    assert!((128..=180).contains(&j));
+    debug_assert!((128..=180).contains(&j));
 
     let mid = b1 + ((b0 >> 64) as u64) as u128; // 64
     let s1 = b2 + ((mid >> 64) as u64) as u128; // 128
@@ -342,6 +359,7 @@ fn mul_shift_mod1e9(m: u64, mul: &[u64; 3], j: i32) -> u32 {
 }
 
 // Returns the number of decimal digits in v, which must not contain more than 9 digits.
+#[cfg_attr(feature = "no-panic", no_panic)]
 fn decimal_length9(v: u32) -> u32 {
     // Function precondition: v is not a 10-digit number.
     // (f2s: 9 digits are sufficient for round-tripping.)
@@ -471,6 +489,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
     //
     // xxxxxxx.1234567 (write xs)
     if e2 >= -(DOUBLE_MANTISSA_BITS as i32) {
+        // 0 <= idx <= 2
         let idx = if e2 < 0 {
             0
         } else {
@@ -481,13 +500,16 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
 
         for i in (0..len).rev() {
             let j = p10bits as i32 - e2;
+            // SAFETY: 0 <= idx <= 2, putting idx inside the index bounds of `POW10_OFFSET`.
+            let split_idx = *POW10_OFFSET.get_unchecked(idx as usize) as usize;
+
+            // SAFETY: The max value inside `POW10_OFFSET` is 5, and the max value of `i` is 2,
+            // putting `split_idx + i` inside the index bounds of `POW10_SPLIT`.
+            let mul = POW10_SPLIT.get_unchecked(split_idx + i as usize);
+
             // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
             // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
-            let digits = mul_shift_mod1e9(
-                m2 << 8,
-                &POW10_SPLIT[POW10_OFFSET[idx as usize] as usize + i as usize],
-                j + 8,
-            );
+            let digits = mul_shift_mod1e9(m2 << 8, mul, j + 8);
             if nonzero {
                 result.append_nine_digits(digits);
             } else if digits != 0 {
@@ -519,9 +541,9 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
 
     let fraction_digits = fraction_digits as u32;
 
-    let idx = (-e2 / 16).min(MAX_POW10_SPLIT_2_INX);
+    let idx = (-e2 / 16).min(MAX_POW10_SPLIT_2_INX) as usize;
 
-    let min_block = MIN_BLOCK_2[idx as usize];
+    let min_block = MIN_BLOCK_2[idx];
 
     // fraction_digits is defined to be [0, 100] inclusive.
     //
@@ -532,11 +554,21 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         return result.index();
     }
 
+    debug_assert!(idx <= 25);
+
     let mut round_up = false;
 
     for i in 0..blocks {
-        let p: isize = POW10_OFFSET_2[idx as usize] as isize + i as isize - min_block as isize;
-        if p >= POW10_OFFSET_2[idx as usize + 1] as isize {
+        let p: isize = POW10_OFFSET_2[idx] as isize + i as isize - min_block as isize;
+        debug_assert!(p >= 0);
+        let p = p as usize;
+
+        // SAFETY: `idx` <= 26 per the min operation above. If `idx == 26` (which is the last index
+        // of `POW10_OFFSET_2`), blocks <= min_block will always be true, since `1 <= blocks <= 12`
+        // and `MIN_BLOCK_2[26]` = 12. Hence, for that value of `idx` this won't be executed.
+        // Finally, for `idx <= 25` it is always true that `idx + 1 <= 26`, making this access always
+        // in bounds for `POW10_OFFSET_2`.
+        if p >= *POW10_OFFSET_2.get_unchecked(idx + 1) as usize {
             // If the remaining digits are all 0, then we might as well use memset.
             // No rounding required in this case.
             let fill = fraction_digits as usize - 9 * i as usize;
@@ -545,10 +577,22 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
             break;
         }
 
+        debug_assert!(p <= 480);
+
         // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
         // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
         let j: isize = ADDITIONAL_BITS_2 as isize + (-(e2 as isize) - 16 * idx as isize);
-        let mut digits: u32 = mul_shift_mod1e9(m2 << 8, &POW10_SPLIT_2[p as usize], j as i32 + 8);
+
+        // SAFETY: Since `idx <= 25`, the maximum value of `POW10_OFFSET_2[idx]` must be `480` for
+        // `idx == 25`.
+        // However, this also means that `min_block == 11` for that value of `idx`.
+        // Hence, `POW10_OFFSET_2[25] - MIN_BLOCK_2[25] == 469`, and for that value of `blocks`,
+        // `0 <= 1 <= 10`.
+        //
+        // This shows that the maximum value of `p` is `480`, which is exactly the biggest valid
+        // index for `POW10_SPLIT_2`.
+        let mut digits: u32 =
+            mul_shift_mod1e9(m2 << 8, POW10_SPLIT_2.get_unchecked(p), j as i32 + 8);
 
         if i < blocks - 1 {
             result.append_nine_digits(digits);
