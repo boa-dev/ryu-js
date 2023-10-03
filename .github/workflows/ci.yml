@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@1.64.0
+      - uses: dtolnay/rust-toolchain@1.80.0
       - run: cargo build
       - run: cargo build --features small
 
