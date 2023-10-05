@@ -2,7 +2,7 @@
 
 ## [# 1.0.0 (2023-10-05)](https://github.com/boa-dev/ryu-js/compare/v0.2.2...v1.0.0) - ECMAScript compliant implementation of `Number.prototype.toFixed()`
 
-### Breaking changes
+### Breaking Changes
 
 - Minimum rust version has been bumped from `1.36.0` to `1.64.0`.
 
