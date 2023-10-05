@@ -9,7 +9,7 @@
 ### Feature Enhancements
 
 - [FEATURE](https://github.com/boa-dev/ryu-js/pull/35):
-  ECMAScript specification complaint `Number.prototype.toFixed()` implementation. (@HalidOdat)
+  ECMAScript specification compliant `Number.prototype.toFixed()` implementation. (@HalidOdat)
 
 ### Internal Improvements
 
