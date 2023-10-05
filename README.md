@@ -1,9 +1,10 @@
 # Ryū-js
 
-Ryū-js is a fork of the [ryu][ryu-crate] crate adjusted to comply to the ECMAScript [number-to-string][number-to-string] algorithm.
+Ryū-js is a fork of the [ryu][ryu-crate] crate adjusted to comply to the ECMAScript [number-to-string][number-to-string] algorithm, also implementing [`Number.prototype.toFixed()`][number-to-fixed] compliant conversion.
 
 [ryu-crate]: https://crates.io/crates/ryu
 [number-to-string]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
+[number-to-fixed]: https://tc39.es/ecma262/#sec-number.prototype.tofixed
 
 Pure Rust implementation of Ryū, an algorithm to quickly convert floating point
 numbers to decimal strings.
@@ -23,7 +24,7 @@ uses nothing from the Rust standard library so is usable from no_std crates.*
 
 ```toml
 [dependencies]
-ryu-js = "0.2"
+ryu-js = "1.0"
 ```
 
 <br>
@@ -37,8 +38,6 @@ fn main() {
     assert_eq!(printed, "1.234");
 }
 ```
-
-<br>
 
 ## Performance 
 
