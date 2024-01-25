@@ -11,7 +11,7 @@ use core::ptr;
 use no_panic::no_panic;
 
 pub mod to_fixed;
-pub use to_fixed::{format64_to_fixed, Cursor};
+pub use to_fixed::format64_to_fixed;
 
 /// Print f64 to the given buffer and return number of bytes written.
 ///
