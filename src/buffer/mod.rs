@@ -21,7 +21,7 @@ const BUFFER_SIZE: usize = MAX_BUFFER_SIZE;
 /// let printed = buffer.format_finite(1.234);
 /// assert_eq!(printed, "1.234");
 /// ```
-#[derive(Copy, Clone)]
+#[derive(Copy)]
 pub struct Buffer {
     bytes: [MaybeUninit<u8>; BUFFER_SIZE],
 }
@@ -116,6 +116,14 @@ impl Buffer {
             let slice = slice::from_raw_parts(self.bytes.as_ptr().cast::<u8>(), n);
             str::from_utf8_unchecked(slice)
         }
+    }
+}
+
+impl Clone for Buffer {
+    #[inline]
+    #[allow(clippy::non_canonical_clone_impl)] // false positive https://github.com/rust-lang/rust-clippy/issues/11072
+    fn clone(&self) -> Self {
+        Buffer::new()
     }
 }
 

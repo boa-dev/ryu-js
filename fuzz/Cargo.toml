@@ -13,6 +13,9 @@ arbitrary = { version = "1", features = ["derive"] }
 libfuzzer-sys = "0.4"
 ryu-js = { path = ".." }
 
+[features]
+small = ["ryu-js/small"]
+
 [[bin]]
 name = "fuzz_ryu_js"
 path = "fuzz_targets/fuzz_ryu_js.rs"

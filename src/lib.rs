@@ -66,6 +66,7 @@
     clippy::missing_panics_doc,
     clippy::module_name_repetitions,
     clippy::must_use_candidate,
+    clippy::needless_doctest_main,
     clippy::similar_names,
     clippy::too_many_lines,
     clippy::unreadable_literal,
