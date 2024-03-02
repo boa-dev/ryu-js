@@ -79,6 +79,18 @@ fn test_non_finite() {
 }
 
 #[test]
+fn test_basic() {
+    assert_eq!(pretty(0.0), "0");
+    assert_eq!(pretty(-0.0), "0");
+    assert_eq!(pretty(1.0), "1");
+    assert_eq!(pretty(-1.0), "-1");
+    assert_eq!(pretty(f64::NAN.copysign(1.0)), "NaN");
+    assert_eq!(pretty(f64::NAN.copysign(-1.0)), "NaN");
+    assert_eq!(pretty(f64::INFINITY), "Infinity");
+    assert_eq!(pretty(f64::NEG_INFINITY), "-Infinity");
+}
+
+#[test]
 fn test_switch_to_subnormal() {
     check!(2.2250738585072014e-308);
 }

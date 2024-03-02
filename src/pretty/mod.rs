@@ -1,11 +1,11 @@
 mod exponent;
 mod mantissa;
 
-use self::exponent::*;
-use self::mantissa::*;
+use self::exponent::{write_exponent2, write_exponent3};
+use self::mantissa::{write_mantissa, write_mantissa_long};
 use crate::common;
-use crate::d2s::{self, *};
-use crate::f2s::*;
+use crate::d2s::{self, d2d, DOUBLE_EXPONENT_BITS, DOUBLE_MANTISSA_BITS};
+use crate::f2s::{f2d, FLOAT_EXPONENT_BITS, FLOAT_MANTISSA_BITS};
 use core::ptr;
 #[cfg(feature = "no-panic")]
 use no_panic::no_panic;
@@ -54,6 +54,7 @@ pub use to_fixed::format64_to_fixed;
 #[cfg_attr(feature = "no-panic", no_panic)]
 pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
     debug_assert!(!result.is_null());
+
     let bits = f.to_bits();
     let sign = ((bits >> (DOUBLE_MANTISSA_BITS + DOUBLE_EXPONENT_BITS)) & 1) != 0;
     let ieee_mantissa = bits & ((1u64 << DOUBLE_MANTISSA_BITS) - 1);
@@ -160,6 +161,7 @@ pub unsafe fn format64(f: f64, result: *mut u8) -> usize {
 #[cfg_attr(feature = "no-panic", no_panic)]
 pub unsafe fn format32(f: f32, result: *mut u8) -> usize {
     debug_assert!(!result.is_null());
+
     let bits = f.to_bits();
     let sign = ((bits >> (FLOAT_MANTISSA_BITS + FLOAT_EXPONENT_BITS)) & 1) != 0;
     let ieee_mantissa = bits & ((1u32 << FLOAT_MANTISSA_BITS) - 1);
