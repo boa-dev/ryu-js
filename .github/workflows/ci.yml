@@ -18,12 +18,6 @@ permissions:
 env:
   RUSTFLAGS: -Dwarnings
 
-permissions:
-  contents: read
-
-env:
-  RUSTFLAGS: -Dwarnings
-
 jobs:
   test:
     name: Rust ${{matrix.rust}}
