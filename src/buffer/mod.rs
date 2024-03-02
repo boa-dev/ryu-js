@@ -50,7 +50,7 @@ impl Buffer {
     /// checks for special cases.
     ///
     /// [spec]: https://tc39.es/ecma262/#sec-numeric-types-number-tostring
-    #[cfg_attr(feature = "no-panic", inline)]
+    #[inline]
     #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn format<F: Float>(&mut self, f: F) -> &str {
         if f.is_nonfinite() {
@@ -98,7 +98,7 @@ impl Buffer {
     /// "Infinity", and negative infinity as "-Infinity" to match the [ECMAScript specification][spec].
     ///
     /// [spec]: https://tc39.es/ecma262/#sec-numeric-types-number-tofixed
-    #[cfg_attr(feature = "no-panic", inline)]
+    #[inline]
     #[cfg_attr(feature = "no-panic", no_panic)]
     pub fn format_to_fixed<F: FloatToFixed>(&mut self, f: F, fraction_digits: u8) -> &str {
         let fraction_digits = fraction_digits.min(100);
