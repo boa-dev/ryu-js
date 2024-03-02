@@ -1,6 +1,6 @@
 [package]
 name = "ryu-js"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["David Tolnay <dtolnay@gmail.com>", "boa-dev"]
 categories = ["value-formatting", "no-std", "no-std::no-alloc"]
 description = "Fast floating point to string conversion, ECMAScript compliant."
