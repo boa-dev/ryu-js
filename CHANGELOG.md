@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [# 1.0.1 (2024-03-02)](https://github.com/boa-dev/ryu-js/compare/v1.0.0...v1.0.1)
+
+### Internal Improvements
+
+- [INTERNAL #45](https://github.com/boa-dev/ryu-js/pull/45): Add release workflow. (@HalidOdat)
+- [INTERNAL #43](https://github.com/boa-dev/ryu-js/pull/43): Add `#[inline]` to public functions. (@HalidOdat)
+- [INTERNAL #42](https://github.com/boa-dev/ryu-js/pull/42): Sync upstream/master. (@HalidOdat, @jedel1043)
+
 ## [# 1.0.0 (2023-10-05)](https://github.com/boa-dev/ryu-js/compare/v0.2.2...v1.0.0) - ECMAScript compliant implementation of `Number.prototype.toFixed()`
 
 ### Breaking Changes
