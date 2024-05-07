@@ -53,6 +53,7 @@
 //! notation.
 
 #![no_std]
+#![cfg_attr(not(check_cfg), allow(unexpected_cfgs))]
 #![allow(
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
