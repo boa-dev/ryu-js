@@ -31,13 +31,13 @@ fn test_exhaustive() {
             };
 
             let mut bytes = [0u8; 24];
-            let mut buffer = ryu::Buffer::new();
+            let mut buffer = ryu_js::Buffer::new();
             for u in min..=max {
                 let f = f32::from_bits(u);
                 if !f.is_finite() {
                     continue;
                 }
-                let n = unsafe { ryu::raw::format32(f, &mut bytes[0]) };
+                let n = unsafe { ryu_js::raw::format32(f, &mut bytes[0]) };
                 assert_eq!(Ok(Ok(f)), str::from_utf8(&bytes[..n]).map(str::parse));
                 assert_eq!(Ok(f), buffer.format_finite(f).parse());
             }
