@@ -18,10 +18,10 @@ mod d2fixed_full_table;
 ///
 /// - 1 byte for sign (-)
 /// - `22` bytes for whole part:
-///     Because we have a check for if `>= 1e21` (1 byte extra, just in case)
+///   Because we have a check for if `>= 1e21` (1 byte extra, just in case)
 /// - `1` byte for dot (`.`)
 /// - `108` (`9 * 12`) bytes for fraction part:
-///     We write digits in blocks, which consist of `9` digits.
+///   We write digits in blocks, which consist of `9` digits.
 ///
 /// Total: `1 + 22 + 1 + 108 = 132`
 pub const MAX_BUFFER_SIZE: usize = 132;
@@ -123,7 +123,7 @@ impl Cursor {
     /// The caller has to guarantee that:
     ///
     /// - 10^(olength-1) <= digits < 10^olength
-    /// e.g., by passing `olength` as `decimalLength9(digits)`.
+    ///   e.g., by passing `olength` as `decimalLength9(digits)`.
     ///
     /// - That the buffer has enough space for the decimal length of the given integer.
     #[cfg_attr(feature = "no-panic", no_panic)]

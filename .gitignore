@@ -1,4 +1,3 @@
-/target
+/target/
 /upstream
-**/*.rs.bk
-Cargo.lock
+/Cargo.lock
