@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [# 1.0.2 (2024-02-16)](https://github.com/boa-dev/ryu-js/compare/v1.0.1...v1.0.2)
+
+### Internal Improvements
+
+- [INTERNAL #48](https://github.com/boa-dev/ryu-js/pull/48): Sync `upstream/master`. (@HalidOdat)
+
 ## [# 1.0.1 (2024-03-02)](https://github.com/boa-dev/ryu-js/compare/v1.0.0...v1.0.1)
 
 ### Internal Improvements
