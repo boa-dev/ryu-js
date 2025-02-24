@@ -120,6 +120,25 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug integration test 'to_exponential'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=to_exponential",
+                    "--package=ryu-js"
+                ],
+                "filter": {
+                    "name": "to_exponential",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug integration test 's2d_test'",
             "cargo": {
                 "args": [

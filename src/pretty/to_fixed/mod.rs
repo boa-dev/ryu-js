@@ -215,6 +215,55 @@ impl Cursor {
         self.index += count as isize;
     }
 
+    /// Convert `digits` to a sequence of decimal digits.
+    /// Print the first digit, followed by a decimal dot '.' followed by the remaining digits.
+    /// The caller has to guarantee that:
+    ///   10^(olength-1) <= digits < 10^olength
+    ///
+    /// e.g., by passing `olength` as `decimal_length9(digits)`.
+    unsafe fn append_d_digits(&mut self, olength: u32, mut digits: u32) {
+        let result = self.buffer.offset(self.index);
+
+        let mut i = 0;
+        while digits >= 10000 {
+            let c = digits % 10000;
+            digits /= 10000;
+            let c0 = (c % 100) << 1;
+            let c1 = (c / 100) << 1;
+
+            // TODO: Memcpy is very common, wrap functionality in a member function.
+            // memcpy(result + olength + 1 - i - 2, DIGIT_TABLE + c0, 2);
+            result
+                .offset(olength as isize + 1 - i - 2)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c0 as isize), 2);
+            // memcpy(result + olength + 1 - i - 4, DIGIT_TABLE + c1, 2);
+            result
+                .offset(olength as isize + 1 - i - 4)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c1 as isize), 2);
+
+            i += 4;
+        }
+        if digits >= 100 {
+            let c = (digits % 100) << 1;
+            digits /= 100;
+            // memcpy(result + olength + 1 - i - 2, DIGIT_TABLE + c, 2);
+            result
+                .offset(olength as isize + 1 - i - 2)
+                .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c as isize), 2);
+        }
+        if digits >= 10 {
+            let c = digits << 1;
+            *result.offset(2) = DIGIT_TABLE[c as usize + 1];
+            *result.offset(1) = b'.';
+            *result.offset(0) = DIGIT_TABLE[c as usize];
+        } else {
+            *result.offset(1) = b'.';
+            *result.offset(0) = b'0' + digits as u8;
+        }
+
+        self.index += olength as isize + 1; // +1 for decimal point
+    }
+
     /// Get the byte at the given index.
     ///
     /// # Safety
@@ -268,13 +317,7 @@ fn log10_pow2(e: i32) -> u32 {
 /// Range `[0, 2]` inclusive.
 #[cfg_attr(feature = "no-panic", no_panic)]
 fn index_for_exponent(e: u32) -> u32 {
-    debug_assert!((0..=MAX_E2 as u32).contains(&e));
-
-    let result = (e + 15) / 16;
-
-    debug_assert!((0..=2).contains(&result));
-
-    result
+    (e + 15) / 16
 }
 
 #[cfg_attr(feature = "no-panic", no_panic)]
@@ -614,7 +657,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         }
     }
 
-    // Roundup if needed.
+    // Round_up if needed.
     if round_up {
         let mut round_index = result.index;
         let mut dot_index = 0; // '.' can't be located at index 0
@@ -642,6 +685,270 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
             result.set(round_index, c + 1);
             break;
         }
+    }
+
+    result.index()
+}
+
+// TODO:
+const MAX_BUFFER_SIZE_EXPONENTIAL: usize = MAX_BUFFER_SIZE;
+
+/// Print [`f64`] to the given buffer using fixed notation,
+/// as defined in the ECMAScript `Number.prototype.toExponential()` method
+/// and return number of bytes written.
+///
+/// TODO: At most 132 bytes will be written.
+///
+/// ## Special cases
+///
+/// This function **does not** check for NaN or infinity. If the input
+/// number is not a finite float, the printed representation will be some
+/// correctly formatted but unspecified numerical value.
+///
+/// Please check [`is_finite`] yourself before calling this function, or
+/// check [`is_nan`] and [`is_infinite`] and handle those cases yourself.
+///
+/// [`is_finite`]: https://doc.rust-lang.org/std/primitive.f64.html#method.is_finite
+/// [`is_nan`]: https://doc.rust-lang.org/std/primitive.f64.html#method.is_nan
+/// [`is_infinite`]: https://doc.rust-lang.org/std/primitive.f64.html#method.is_infinite
+///
+/// ## Safety
+///
+/// The `result` pointer argument must point to sufficiently many writable bytes
+/// to hold Ryū's representation of `f`.
+///
+/// ## Example
+///
+/// ```
+/// use std::{mem::MaybeUninit, slice, str};
+///
+/// let f = 1.235f64;
+///
+/// unsafe {
+///     // TODO: DEFINE MAX
+///     let mut buffer = [MaybeUninit::<u8>::uninit(); 132];
+///     let len = ryu_js::raw::format64_to_exponential(f, 2, buffer.as_mut_ptr() as *mut u8);
+///     let slice = slice::from_raw_parts(buffer.as_ptr() as *const u8, len);
+///     let print = str::from_utf8_unchecked(slice);
+///     assert_eq!(print, "1.24e+0");
+/// }
+/// ```
+#[must_use]
+#[cfg_attr(feature = "no-panic", no_panic)]
+pub unsafe fn format64_to_exponential(f: f64, mut precision: u8, result: *mut u8) -> usize {
+    debug_assert!((0..=100).contains(&precision));
+
+    let mut result = Cursor::new(result, MAX_BUFFER_SIZE_EXPONENTIAL);
+
+    let bits = f.to_bits();
+
+    // Decode bits into sign, mantissa, and exponent.
+    let sign = ((bits >> (DOUBLE_MANTISSA_BITS + DOUBLE_EXPONENT_BITS)) & 1) != 0;
+    let ieee_mantissa = bits & ((1u64 << DOUBLE_MANTISSA_BITS) - 1);
+    let ieee_exponent =
+        (bits >> DOUBLE_MANTISSA_BITS) as u32 & ((1u32 << DOUBLE_EXPONENT_BITS) - 1);
+
+    // Special case when it's 0 or -0 it's the same.
+    //
+    // Return and append '.' and '0's is needed.
+    //
+    // See: https://tc39.es/ecma262/#%E2%84%9D
+    if ieee_exponent == 0 && ieee_mantissa == 0 {
+        result.append_byte(b'0');
+        if precision > 0 {
+            result.append_byte(b'.');
+            result.append_bytes(b'0', precision as usize);
+        }
+        result.append_byte(b'e');
+        result.append_byte(b'+');
+        result.append_byte(b'0');
+        return result.index();
+    }
+
+    let (e2, m2) = if ieee_exponent == 0 {
+        (1 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32, ieee_mantissa)
+    } else {
+        (
+            ieee_exponent as i32 - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS as i32,
+            (1 << DOUBLE_MANTISSA_BITS) | ieee_mantissa,
+        )
+    };
+
+    let print_decimal_point = precision > 0;
+    precision += 1;
+
+    let precision = precision as u32;
+
+    if sign {
+        result.append_byte(b'-');
+    }
+
+    let mut digits = 0;
+    let mut printed_digits = 0;
+    let mut available_digits = 0;
+    let mut exp = 0;
+
+    // Write the whole part (integral part) of the floating point.
+    //
+    // xxxxxxx.1234567 (write xs)
+    if e2 >= -(DOUBLE_MANTISSA_BITS as i32) {
+        let idx = if e2 < 0 {
+            0
+        } else {
+            index_for_exponent(e2 as u32)
+        };
+        let p10bits = pow10_bits_for_index(idx);
+        let len = length_for_index(idx);
+
+        for i in (0..len).rev() {
+            let j = p10bits as i32 - e2;
+
+            digits = mul_shift_mod1e9(
+                m2 << 8,
+                &POW10_SPLIT[POW10_OFFSET[idx as usize] as usize + i as usize],
+                j + 8,
+            );
+            if printed_digits != 0 {
+                if printed_digits + 9 > precision {
+                    available_digits = 9;
+                    break;
+                }
+                result.append_nine_digits(digits);
+                printed_digits += 9;
+            } else if digits != 0 {
+                available_digits = decimal_length9(digits);
+                exp = i as i32 * 9 + available_digits as i32 - 1;
+                if available_digits > precision {
+                    break;
+                }
+                if print_decimal_point {
+                    result.append_d_digits(available_digits, digits);
+                } else {
+                    result.append_byte(b'0' + digits as u8);
+                }
+                printed_digits = available_digits;
+                available_digits = 0;
+            }
+        }
+    }
+
+    if e2 < 0 && available_digits == 0 {
+        let idx = -e2 / 16;
+        for i in MIN_BLOCK_2[idx as usize]..200 {
+            let j = ADDITIONAL_BITS_2 as i32 + (-e2 - 16 * idx);
+            let p =
+                POW10_OFFSET_2[idx as usize] as u32 + i as u32 - MIN_BLOCK_2[idx as usize] as u32;
+            // Temporary: j is usually around 128, and by shifting a bit, we push it to 128 or above, which is
+            // a slightly faster code path in mulShift_mod1e9. Instead, we can just increase the multipliers.
+            digits = if p >= POW10_OFFSET_2[idx as usize + 1] as u32 {
+                0
+            } else {
+                mul_shift_mod1e9(m2 << 8, &POW10_SPLIT_2[p as usize], j + 8)
+            };
+
+            if printed_digits != 0 {
+                if printed_digits + 9 > precision {
+                    available_digits = 9;
+                    break;
+                }
+                result.append_nine_digits(digits);
+                printed_digits += 9;
+            } else if digits != 0 {
+                available_digits = decimal_length9(digits);
+                exp = -(i as i32 + 1) * 9 + available_digits as i32 - 1;
+                if available_digits > precision {
+                    break;
+                }
+                if print_decimal_point {
+                    result.append_d_digits(available_digits, digits);
+                } else {
+                    result.append_byte(b'0' + digits as u8);
+                }
+                printed_digits = available_digits;
+                available_digits = 0;
+            }
+        }
+    }
+
+    let maximum = precision - printed_digits;
+    if available_digits == 0 {
+        digits = 0;
+    }
+    let mut last_digit = 0;
+    if available_digits > maximum {
+        for _k in 0..available_digits - maximum {
+            last_digit = digits % 10;
+            digits /= 10;
+        }
+    }
+
+    // If last digit is >= 5 then round up.
+    let round_up = last_digit >= 5;
+
+    if printed_digits != 0 {
+        if digits == 0 {
+            result.append_bytes(b'0', maximum as usize);
+        } else {
+            result.append_c_digits(maximum, digits);
+        }
+    } else if print_decimal_point {
+        result.append_d_digits(maximum, digits);
+    } else {
+        result.append_byte(b'0' + digits as u8);
+    }
+
+    if round_up {
+        let mut round_index = result.index() as isize;
+        loop {
+            round_index -= 1;
+            if round_index == -1 {
+                result.set(round_index + 1, b'1');
+                exp += 1;
+                break;
+            }
+
+            let c = result.get(round_index);
+            if c == b'-' {
+                result.set(round_index + 1, b'1');
+                exp += 1;
+                break;
+            }
+
+            if c == b'.' {
+                continue;
+            } else if c == b'9' {
+                result.set(round_index, b'0');
+                continue;
+            } else {
+                result.set(round_index, c + 1);
+                break;
+            }
+        }
+    }
+
+    result.append_byte(b'e');
+    if exp < 0 {
+        result.append_byte(b'-');
+        exp = -exp;
+    } else {
+        result.append_byte(b'+');
+    }
+
+    if exp >= 100 {
+        let c = exp % 10;
+        // memcpy(result + index, DIGIT_TABLE + 2 * (exp / 10), 2);
+
+        if DIGIT_TABLE[2 * (exp as usize / 10)] != b'0' {
+            result.append_byte(DIGIT_TABLE[2 * (exp as usize / 10)]);
+        }
+        result.append_byte(DIGIT_TABLE[2 * (exp as usize / 10) + 1]);
+        result.append_byte(b'0' + c as u8);
+    } else {
+        // OLD: memcpy(result + index, DIGIT_TABLE + 2 * exp, 2);
+        if DIGIT_TABLE[2 * exp as usize] != b'0' {
+            result.append_byte(DIGIT_TABLE[2 * exp as usize]);
+        }
+        result.append_byte(DIGIT_TABLE[2 * exp as usize + 1]);
     }
 
     result.index()

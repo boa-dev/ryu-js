@@ -117,6 +117,38 @@ impl Buffer {
             str::from_utf8_unchecked(slice)
         }
     }
+
+    /// Print a floating point number into this buffer using the `Number.prototype.toExponential()` notation
+    /// and return a reference to its string representation within the buffer.
+    ///
+    /// The `precision` argument must be between `[0, 100]` inclusive,
+    /// If a values value that is greater than the max is passed in will be clamped to max.
+    ///
+    /// # Special cases
+    ///
+    /// This function formats NaN as the string "NaN", positive infinity as
+    /// "Infinity", and negative infinity as "-Infinity" to match the [ECMAScript specification][spec].
+    ///
+    /// [spec]: https://tc39.es/ecma262/#sec-numeric-types-number-toexponential
+    #[inline]
+    #[cfg_attr(feature = "no-panic", no_panic)]
+    pub fn format_to_exponential<F: FloatToExponential>(&mut self, f: F, precision: u8) -> &str {
+        let precision = precision.min(100);
+
+        if f.is_nonfinite() {
+            return f.format_nonfinite();
+        }
+
+        unsafe {
+            let n = f.write_to_ryu_buffer_to_exponential(
+                precision,
+                self.bytes.as_mut_ptr().cast::<u8>(),
+            );
+            debug_assert!(n <= self.bytes.len());
+            let slice = slice::from_raw_parts(self.bytes.as_ptr().cast::<u8>(), n);
+            str::from_utf8_unchecked(slice)
+        }
+    }
 }
 
 impl Clone for Buffer {
@@ -155,11 +187,15 @@ impl Float for f64 {}
 pub trait FloatToFixed: Sealed {}
 impl FloatToFixed for f64 {}
 
+pub trait FloatToExponential: Sealed {}
+impl FloatToExponential for f64 {}
+
 pub trait Sealed: Copy {
     fn is_nonfinite(self) -> bool;
     fn format_nonfinite(self) -> &'static str;
     unsafe fn write_to_ryu_buffer(self, result: *mut u8) -> usize;
     unsafe fn write_to_ryu_buffer_to_fixed(self, fraction_digits: u8, result: *mut u8) -> usize;
+    unsafe fn write_to_ryu_buffer_to_exponential(self, presission: u8, result: *mut u8) -> usize;
 }
 
 impl Sealed for f32 {
@@ -194,6 +230,11 @@ impl Sealed for f32 {
     unsafe fn write_to_ryu_buffer_to_fixed(self, _fraction_digits: u8, _result: *mut u8) -> usize {
         panic!("toFixed for f32 type is not implemented yet!")
     }
+
+    #[inline]
+    unsafe fn write_to_ryu_buffer_to_exponential(self, _precision: u8, _result: *mut u8) -> usize {
+        panic!("toExponential for f32 type is not implemented yet!")
+    }
 }
 
 impl Sealed for f64 {
@@ -227,5 +268,10 @@ impl Sealed for f64 {
     #[inline]
     unsafe fn write_to_ryu_buffer_to_fixed(self, fraction_digits: u8, result: *mut u8) -> usize {
         raw::format64_to_fixed(self, fraction_digits, result)
+    }
+
+    #[inline]
+    unsafe fn write_to_ryu_buffer_to_exponential(self, precision: u8, result: *mut u8) -> usize {
+        raw::format64_to_exponential(self, precision, result)
     }
 }
