@@ -6,7 +6,8 @@
     clippy::unreadable_literal
 )]
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use std::io::Write;
 
 macro_rules! benches {
