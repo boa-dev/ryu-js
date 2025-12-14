@@ -9,8 +9,13 @@ edition = "2018"
 exclude = ["build.rs", "performance.png", "chart/**"]
 keywords = ["float"]
 license = "Apache-2.0 OR BSL-1.0"
+<<<<<<< HEAD
 repository = "https://github.com/boa-dev/ryu-js"
 rust-version = "1.64"
+=======
+repository = "https://github.com/dtolnay/ryu"
+rust-version = "1.68"
+>>>>>>> dc38410 (Raise required compiler to Rust 1.68)
 
 [features]
 # Use smaller lookup tables. Instead of storing every required power of
