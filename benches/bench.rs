@@ -1,11 +1,5 @@
 // cargo bench
 
-#![allow(
-    clippy::approx_constant,
-    clippy::excessive_precision,
-    clippy::unreadable_literal
-)]
-
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint;
 use std::io::Write;
@@ -51,10 +45,10 @@ macro_rules! benches {
 benches! {
     bench_0_f64(0_f64),
     bench_short_f64(0.1234_f64),
-    bench_e_f64(2.718281828459045_f64),
+    bench_e_f64(std::f64::consts::E),
     bench_max_f64(f64::MAX),
     bench_0_f32(0_f32),
     bench_short_f32(0.1234_f32),
-    bench_e_f32(2.718281828459045_f32),
+    bench_e_f32(std::f32::consts::E),
     bench_max_f32(f32::MAX),
 }
