@@ -6,7 +6,8 @@
     clippy::unreadable_literal
 )]
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint;
 use std::io::Write;
 
 macro_rules! benches {
@@ -18,9 +19,9 @@ macro_rules! benches {
                     let mut buf = ryu_js::Buffer::new();
 
                     c.bench_function(concat!("ryu_js_", stringify!($name)), move |b| b.iter(move || {
-                        let value = black_box($value);
+                        let value = hint::black_box($value);
                         let formatted = buf.format_finite(value);
-                        black_box(formatted);
+                        hint::black_box(formatted);
                     }));
                 }
             )*
@@ -35,9 +36,9 @@ macro_rules! benches {
 
                     c.bench_function(concat!("std_fmt_", stringify!($name)), move |b| b.iter(|| {
                         buf.clear();
-                        let value = black_box($value);
+                        let value = hint::black_box($value);
                         write!(&mut buf, "{}", value).unwrap();
-                        black_box(buf.as_slice());
+                        hint::black_box(buf.as_slice());
                     }));
                 }
             )*
