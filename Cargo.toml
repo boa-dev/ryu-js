@@ -23,13 +23,17 @@ small = []
 no-panic = { version = "0.1", optional = true }
 
 [dev-dependencies]
+criterion = { version = "0.8", default-features = false }
 num_cpus = "1.8"
 rand = "0.9"
 rand_xorshift = "0.4"
-criterion = "0.5"
 
 [lib]
 bench = false
+
+[[bench]]
+name = "bench"
+harness = false
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -42,7 +46,3 @@ rustdoc-args = [
     "--extern-html-root-url=alloc=https://doc.rust-lang.org",
     "--extern-html-root-url=std=https://doc.rust-lang.org",
 ]
-
-[[bench]]
-name = "bench"
-harness = false
