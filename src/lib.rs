@@ -19,7 +19,23 @@
 //! assert_eq!(printed, "1.234");
 //! ```
 //!
-//! ## Performance (lower is better)
+//! ## Performance
+//!
+//! You can run upstream's benchmarks with:
+//!
+//! ```console
+//! $ git clone https://github.com/ulfjack/ryu c-ryu
+//! $ cd c-ryu
+//! $ bazel run -c opt //ryu/benchmark
+//! ```
+//!
+//! And the same benchmark against our implementation with:
+//!
+//! ```console
+//! $ git clone https://github.com/boa-dev/ryu-js rust-ryu
+//! $ cd rust-ryu
+//! $ cargo run --example upstream_benchmark --release
+//! ```
 //!
 //! The benchmarks measure the average time to print a 32-bit float and average
 //! time to print a 64-bit float, where the inputs are distributed as uniform random

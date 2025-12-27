@@ -36,15 +36,7 @@ fn main() {
 }
 ```
 
-## Performance 
-
-<!--
-
-## Performance (lower is better)
-
-![performance](https://raw.githubusercontent.com/boa-dev/ryu-js/master/performance.png)
-
--->
+## Performance
 
 You can run upstream's benchmarks with:
 
