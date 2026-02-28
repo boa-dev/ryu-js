@@ -6,6 +6,7 @@
     clippy::unreadable_literal
 )]
 
+#[allow(deprecated)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::io::Write;
 
@@ -17,6 +18,7 @@ macro_rules! benches {
                 pub fn $name(c: &mut Criterion) {
                     let mut buf = ryu_js::Buffer::new();
 
+                    #[allow(deprecated)]
                     c.bench_function(concat!("ryu_js_", stringify!($name)), move |b| b.iter(move || {
                         let value = black_box($value);
                         let formatted = buf.format_finite(value);
@@ -33,6 +35,7 @@ macro_rules! benches {
                 pub fn $name(c: &mut Criterion) {
                     let mut buf = Vec::with_capacity(20);
 
+                    #[allow(deprecated)]
                     c.bench_function(concat!("std_fmt_", stringify!($name)), move |b| b.iter(|| {
                         buf.clear();
                         let value = black_box($value);
