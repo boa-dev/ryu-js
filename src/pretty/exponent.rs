@@ -10,7 +10,7 @@ pub unsafe fn write_exponent3(mut k: isize, mut result: *mut u8) -> usize {
         k = -k;
     } else {
         *result = b'+';
-        result = result.offset(1);
+        result = result.add(1);
     }
 
     debug_assert!(k < 1000);
@@ -39,7 +39,7 @@ pub unsafe fn write_exponent2(mut k: isize, mut result: *mut u8) -> usize {
         k = -k;
     } else {
         *result = b'+';
-        result = result.offset(1);
+        result = result.add(1);
     }
 
     debug_assert!(k < 100);

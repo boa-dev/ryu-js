@@ -111,7 +111,7 @@ impl Cursor {
                 .offset(5 - i as isize)
                 .copy_from_nonoverlapping(DIGIT_TABLE.as_ptr().offset(c1 as isize), 2);
         }
-        *(result.offset(0)) = b'0' + digits as u8;
+        *result = b'0' + digits as u8;
 
         self.index += count;
     }
