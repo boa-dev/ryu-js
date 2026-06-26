@@ -16,16 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - uses: actions-rs/toolchain@v1.0.7
-        with:
-          toolchain: stable
-          override: true
-          profile: minimal
-
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -34,7 +29,6 @@ jobs:
             ~/.cargo/git
             ~/.cargo/registry
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - uses: boa-dev/criterion-compare-action@v3.2.4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
