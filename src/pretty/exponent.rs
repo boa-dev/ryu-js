@@ -6,11 +6,11 @@ pub unsafe fn write_exponent3(mut k: isize, mut result: *mut u8) -> usize {
     let sign = k < 0;
     if sign {
         *result = b'-';
-        result = result.offset(1);
+        result = result.add(1);
         k = -k;
     } else {
         *result = b'+';
-        result = result.offset(1);
+        result = result.add(1);
     }
 
     debug_assert!(k < 1000);
@@ -18,7 +18,7 @@ pub unsafe fn write_exponent3(mut k: isize, mut result: *mut u8) -> usize {
         *result = b'0' + (k / 100) as u8;
         k %= 100;
         let d = DIGIT_TABLE.as_ptr().offset(k * 2);
-        ptr::copy_nonoverlapping(d, result.offset(1), 2);
+        ptr::copy_nonoverlapping(d, result.add(1), 2);
         4
     } else if k >= 10 {
         let d = DIGIT_TABLE.as_ptr().offset(k * 2);
@@ -35,11 +35,11 @@ pub unsafe fn write_exponent2(mut k: isize, mut result: *mut u8) -> usize {
     let sign = k < 0;
     if sign {
         *result = b'-';
-        result = result.offset(1);
+        result = result.add(1);
         k = -k;
     } else {
         *result = b'+';
-        result = result.offset(1);
+        result = result.add(1);
     }
 
     debug_assert!(k < 100);

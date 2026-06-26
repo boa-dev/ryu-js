@@ -2,14 +2,13 @@
 name = "ryu-fuzz"
 version = "0.0.0"
 authors = ["David Tolnay <dtolnay@gmail.com>", "boa-dev"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
-arbitrary = { version = "1", features = ["derive"] }
 libfuzzer-sys = "0.4"
 ryu-js = { path = ".." }
 

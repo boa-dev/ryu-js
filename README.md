@@ -16,11 +16,8 @@ under the creative commons CC-BY-SA license.
 This Rust implementation is a line-by-line port of Ulf Adams' implementation in
 C, [https://github.com/ulfjack/ryu][upstream].
 
-*Requirements: This crate supports any compiler version back to rustc 1.64; it
-uses nothing from the Rust standard library so is usable from no_std crates.*
-
 [paper]: https://dl.acm.org/citation.cfm?id=3192369
-[upstream]: https://github.com/ulfjack/ryu/tree/abf76d252bc97300354857e64e80d4a2bf664291
+[upstream]: https://github.com/ulfjack/ryu/tree/e3e090c66efd258a0cee50ee93411ec99668d416
 
 ```toml
 [dependencies]
@@ -39,15 +36,7 @@ fn main() {
 }
 ```
 
-## Performance 
-
-<!--
-
-## Performance (lower is better)
-
-![performance](https://raw.githubusercontent.com/boa-dev/ryu-js/master/performance.png)
-
--->
+## Performance
 
 You can run upstream's benchmarks with:
 
