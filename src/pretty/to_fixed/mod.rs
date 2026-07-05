@@ -28,8 +28,8 @@ pub const MAX_BUFFER_SIZE: usize = 132;
 
 pub struct Cursor {
     buffer: *mut u8,
-    len: isize,
-    index: isize,
+    len: usize,
+    index: usize,
 }
 
 impl Cursor {
@@ -38,7 +38,7 @@ impl Cursor {
         debug_assert!(!buffer.is_null());
         Self {
             buffer,
-            len: len as isize,
+            len,
             index: 0,
         }
     }
@@ -52,7 +52,7 @@ impl Cursor {
     unsafe fn append_byte(&mut self, c: u8) {
         debug_assert!(self.index < self.len);
 
-        *self.buffer.offset(self.index) = c;
+        *self.buffer.add(self.index) = c;
         self.index += 1;
     }
 
@@ -63,10 +63,10 @@ impl Cursor {
     /// The caller must ensure that there is enough space for the given bytes.
     #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_bytes(&mut self, c: u8, count: usize) {
-        debug_assert!(self.index + count as isize <= self.len);
+        debug_assert!(self.index + count <= self.len);
 
-        self.buffer.offset(self.index).write_bytes(c, count);
-        self.index += count as isize;
+        self.buffer.add(self.index).write_bytes(c, count);
+        self.index += count;
     }
 
     /// Gets the current [`Cursor`] index.
@@ -74,7 +74,7 @@ impl Cursor {
     /// The `index` is also the amount of bytes that have been written into the buffer.
     #[cfg_attr(feature = "no-panic", no_panic)]
     fn index(&self) -> usize {
-        self.index as usize
+        self.index
     }
 
     /// Convert `digits` to decimal and write the last 9 decimal digits to result.
@@ -94,7 +94,7 @@ impl Cursor {
             return;
         }
 
-        let result = self.buffer.offset(self.index);
+        let result = self.buffer.add(self.index);
 
         for i in [0, 4] {
             let c = digits % 10000;
@@ -130,9 +130,9 @@ impl Cursor {
     unsafe fn append_n_digits(&mut self, mut digits: u32) {
         let olength = decimal_length9(digits);
 
-        debug_assert!(self.index + olength as isize <= self.len);
+        debug_assert!(self.index + olength as usize <= self.len);
 
-        let result = self.buffer.offset(self.index);
+        let result = self.buffer.add(self.index);
 
         let mut i = 0;
         while digits >= 10000 {
@@ -175,7 +175,7 @@ impl Cursor {
             *result = b'0' + digits as u8;
         }
 
-        self.index += olength as isize;
+        self.index += olength as usize;
     }
 
     /// Convert `digits` to decimal and write the last `count` decimal digits to result.
@@ -186,9 +186,9 @@ impl Cursor {
     /// The caller must ensure that the buffer has enough space for the given `count`.
     #[cfg_attr(feature = "no-panic", no_panic)]
     unsafe fn append_c_digits(&mut self, count: u32, mut digits: u32) {
-        debug_assert!(self.index + count as isize <= self.len);
+        debug_assert!(self.index + count as usize <= self.len);
 
-        let result = self.buffer.offset(self.index);
+        let result = self.buffer.add(self.index);
 
         // Copy pairs of digits from DIGIT_TABLE.
         let mut i: u32 = 0;
@@ -212,7 +212,7 @@ impl Cursor {
             *result.offset((count - i - 1) as isize) = c;
         }
 
-        self.index += count as isize;
+        self.index += count as usize;
     }
 
     /// Get the byte at the given index.
@@ -221,10 +221,10 @@ impl Cursor {
     ///
     /// The caller must ensure that the index is within `[0, len)`.
     #[cfg_attr(feature = "no-panic", no_panic)]
-    unsafe fn get(&mut self, i: isize) -> u8 {
+    unsafe fn get(&mut self, i: usize) -> u8 {
         debug_assert!((0..self.len).contains(&i));
 
-        *self.buffer.offset(i)
+        *self.buffer.add(i)
     }
 
     /// Set the byte at the given index with the value.
@@ -233,10 +233,10 @@ impl Cursor {
     ///
     /// The caller must ensure that the index is within `[0, len)`.
     #[cfg_attr(feature = "no-panic", no_panic)]
-    unsafe fn set(&mut self, i: isize, c: u8) {
+    unsafe fn set(&mut self, i: usize, c: u8) {
         debug_assert!((0..self.len).contains(&i));
 
-        *self.buffer.offset(i) = c;
+        *self.buffer.add(i) = c;
     }
 }
 
@@ -619,11 +619,9 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         let mut round_index = result.index;
         let mut dot_index = 0; // '.' can't be located at index 0
         loop {
-            round_index -= 1;
-
             // Check the boundary before reading to avoid out-of-bounds access
             // when rounding carries through all integer digits (e.g. 9 -> 10).
-            if round_index == -1 {
+            if round_index == 0 {
                 result.set(0, b'1');
                 if dot_index > 0 {
                     result.set(dot_index, b'0');
@@ -633,6 +631,8 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
                 break;
             }
 
+            round_index -= 1;
+            
             let c = result.get(round_index);
             if c == b'-' {
                 result.set(round_index + 1, b'1');
