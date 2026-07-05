@@ -621,8 +621,8 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
         loop {
             // Check the boundary before reading to avoid out-of-bounds access
             // when rounding carries through all integer digits (e.g. 9 -> 10).
-            if round_index == 0 {
-                result.set(0, b'1');
+            if round_index == 0 || result.get(round_index - 1) == b'-' {
+                result.set(round_index, b'1');
                 if dot_index > 0 {
                     result.set(dot_index, b'0');
                     result.set(dot_index + 1, b'.');
@@ -632,17 +632,7 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
             }
 
             round_index -= 1;
-            
             let c = result.get(round_index);
-            if c == b'-' {
-                result.set(round_index + 1, b'1');
-                if dot_index > 0 {
-                    result.set(dot_index, b'0');
-                    result.set(dot_index + 1, b'.');
-                }
-                result.append_byte(b'0');
-                break;
-            }
             if c == b'.' {
                 dot_index = round_index;
                 continue;
