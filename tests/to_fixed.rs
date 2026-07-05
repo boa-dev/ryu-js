@@ -379,3 +379,21 @@ fn test_min_exponent_boundry_full_mantissa() {
         expected
     );
 }
+
+// Regression test for https://github.com/boa-dev/ryu-js/issues/55
+// Rounding carry that propagates through all integer digits must not
+// read out-of-bounds before the buffer start.
+#[test]
+fn rounding_carry_past_all_digits() {
+    assert_eq!(pretty_to_fixed(9.5, 0), "10");
+    assert_eq!(pretty_to_fixed(99.5, 0), "100");
+    assert_eq!(pretty_to_fixed(999.5, 0), "1000");
+    assert_eq!(pretty_to_fixed(9999.5, 0), "10000");
+}
+
+#[test]
+fn rounding_carry_negative() {
+    assert_eq!(pretty_to_fixed(-9.5, 0), "-10");
+    assert_eq!(pretty_to_fixed(-99.5, 0), "-100");
+    assert_eq!(pretty_to_fixed(-999.5, 0), "-1000");
+}
