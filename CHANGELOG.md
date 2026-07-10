@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [# 1.0.3 (2026-07-05)](https://github.com/boa-dev/ryu-js/compare/v1.0.2...v1.0.3)
+
+### Breaking Changes
+
+- Minimum rust version has been bumped from `1.64.0` to `1.71.0`.
+
+### Bug Fixes
+
+ - [BUG #56](https://github.com/boa-dev/ryu-js/pull/2): Fix panic in `format64_to_fixed` when rounding carries past all integer digits. (@Ansh-699)
+
+### Internal Improvements
+
+- [INTERNAL #57](https://github.com/boa-dev/ryu-js/pull/57): Sync `upstream/main`. (@jedel1043)
+- [INTERNAL #63](https://github.com/boa-dev/ryu-js/pull/63): Make `Cursor` store unsigned integer len and index. (@HalidOdat)
+
 ## [# 1.0.2 (2024-02-16)](https://github.com/boa-dev/ryu-js/compare/v1.0.1...v1.0.2)
 
 ### Internal Improvements
