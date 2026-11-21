@@ -340,7 +340,8 @@ fn test_max_exponent_boundry_and_full_mantissa() {
     );
 }
 
-const MIN_EXPONENT: u16 = 0b010_1001_0011;
+const MIN_EXPONENT_ZERO_MANTISSA: u16 = 0b010_1011_0001;
+const MIN_EXPONENT_FULL_MANTISSA: u16 = 0b010_1011_0000;
 
 #[test]
 fn test_min_exponent_boundry_zero_mantissa() {
@@ -348,7 +349,7 @@ fn test_min_exponent_boundry_zero_mantissa() {
 
     let expected = "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-    for exponent in 0..=MIN_EXPONENT {
+    for exponent in 0..=MIN_EXPONENT_ZERO_MANTISSA {
         assert_eq!(
             pretty_to_fixed(f64_from_parts(false, exponent, m), 100),
             expected
@@ -356,7 +357,10 @@ fn test_min_exponent_boundry_zero_mantissa() {
     }
 
     assert_ne!(
-        pretty_to_fixed(f64_from_parts(false, MIN_EXPONENT + 1, m), 100),
+        pretty_to_fixed(
+            f64_from_parts(false, MIN_EXPONENT_ZERO_MANTISSA + 1, m),
+            100
+        ),
         expected
     );
 }
@@ -367,7 +371,7 @@ fn test_min_exponent_boundry_full_mantissa() {
 
     let expected = "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-    for exponent in 0..=MIN_EXPONENT {
+    for exponent in 0..=MIN_EXPONENT_FULL_MANTISSA {
         assert_eq!(
             pretty_to_fixed(f64_from_parts(false, exponent, m), 100),
             expected
@@ -375,8 +379,27 @@ fn test_min_exponent_boundry_full_mantissa() {
     }
 
     assert_ne!(
-        pretty_to_fixed(f64_from_parts(false, MIN_EXPONENT + 1, m), 100),
+        pretty_to_fixed(
+            f64_from_parts(false, MIN_EXPONENT_FULL_MANTISSA + 1, m),
+            100
+        ),
         expected
+    );
+}
+
+#[test]
+fn test_leading_zero_blocks() {
+    assert_eq!(
+        pretty_to_fixed(1e-17, 40),
+        "0.0000000000000000100000000000000007154242"
+    );
+    assert_eq!(
+        pretty_to_fixed(3.386680864129311e-41, 96),
+        "0.000000000000000000000000000000000000000033866808641293112412157561681710000260256078959410848719"
+    );
+    assert_eq!(
+        pretty_to_fixed(2.0717877721678957e-18, 59),
+        "0.00000000000000000207178777216789569372363572982679877745972"
     );
 }
 
