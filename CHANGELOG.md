@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [# 1.0.4 (2026-11-22)](https://github.com/boa-dev/ryu-js/compare/v1.0.3...v1.0.4)
+
+### Bug Fixes
+
+ - [BUG #67](https://github.com/boa-dev/ryu-js/pull/67): Fix leading zeros in `format_to_fixed` for small numbers. (@devrelu)
+
+### Internal Improvements
+
+- [INTERNAL #68](https://github.com/boa-dev/ryu-js/pull/68): Remove legacy `std::f32`/`std::f64` module imports. (@devrelu)
+
 ## [# 1.0.3 (2026-07-05)](https://github.com/boa-dev/ryu-js/compare/v1.0.2...v1.0.3)
 
 ### Breaking Changes
