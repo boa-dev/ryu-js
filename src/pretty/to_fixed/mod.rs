@@ -558,7 +558,8 @@ pub unsafe fn format64_to_fixed(f: f64, fraction_digits: u8, result: *mut u8) ->
 
     let mut round_up = false;
 
-    for i in 0..blocks {
+    result.append_bytes(b'0', 9 * min_block as usize);
+    for i in min_block as u32..blocks {
         let p: isize = POW10_OFFSET_2[idx] as isize + i as isize - min_block as isize;
         debug_assert!(p >= 0);
         let p = p as usize;
